@@ -1,0 +1,23 @@
+{
+  "name": "ricochet-defense",
+  "version": "1.0.0",
+  "description": "Defend you castle with ricocheting projectiles",
+  "main": "index.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gnerkus/ricochet-defense.git"
+  },
+  "keywords": [
+    "tower-defense",
+    "game"
+  ],
+  "author": "Ifeanyi Oraelosi <ifeanyioraelosi@gmail.com> (http://gnerkus.github.io/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gnerkus/ricochet-defense/issues"
+  },
+  "homepage": "https://github.com/gnerkus/ricochet-defense"
+}
