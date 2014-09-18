@@ -14,20 +14,16 @@ var finalhandler = require('finalhandler');
 var serveStatic = require('serve-static');
 
 var paths = {
-  game: ['./js/game/**/*.js'],
+  game: ['./game/**/*.js'],
   images: ['./assets/spritesheets/*.png',
       './assets/images/*.png',
       './assets/tilesets/*.png',
       './assets/particles/*.png'],
   html: ['*.html'],
-  dist: {
-    css: './dist/css/',
-    js: './dist/js/',
-  },
   vendor: {
-    js: ['./js/vendor/*.js']
+    js: ['./vendor/*.js']
   },
-  gameEntry: ['.js/game/main.js']
+  gameEntry: ['./game/main.js']
 };
 
 gulp.task('webserver', function () {
@@ -45,7 +41,7 @@ gulp.task('webserver', function () {
  * removes css- and js-dist folder.
  */
 gulp.task('clean', function(cb) {
-	rimraf('./dist', cb);
+	rimraf.sync('./dist', cb);
 });
 
 gulp.task('scripts', function () {
@@ -58,36 +54,41 @@ gulp.task('scripts', function () {
         .pipe(jshint())
         .pipe(jshint.reporter())
         .pipe(uglify())
-        .pipe(gulp.dest('./dist/js'));
+        .pipe(gulp.dest('./dist/js/'));
+});
+
+gulp.task('vendor', function () {
+  return gulp.src(paths.vendor.js)
+      .pipe(gulp.dest('./dist/js/'));
 });
 
 gulp.task('html', function () {
-	return gulp.src('*.html')
+	return gulp.src(paths.html)
 	    .pipe(gulp.dest('dist/'));
 });
 
 gulp.task('spritesheets', function () {
 	return gulp.src(paths.images[0])
 	    .pipe(imagemin())
-	    .pipe(gulp.dest('dist/assets/spritesheets'));
+	    .pipe(gulp.dest('dist/assets/spritesheets/'));
 });
 
 gulp.task('images', function () {
 	return gulp.src(paths.images[1])
 	    .pipe(imagemin())
-	    .pipe(gulp.dest('dist/assets/images'));
+	    .pipe(gulp.dest('dist/assets/images/'));
 });
 
 gulp.task('tilesets', function () {
 	return gulp.src(paths.images[2])
 	    .pipe(imagemin())
-	    .pipe(gulp.dest('dist/assets/tilesets'));
+	    .pipe(gulp.dest('dist/assets/tilesets/'));
 });
 
 gulp.task('particles', function () {
 	return gulp.src(paths.images[3])
 	    .pipe(imagemin())
-	    .pipe(gulp.dest('dist/assets/particles'));
+	    .pipe(gulp.dest('dist/assets/particles/'));
 });
 
 gulp.task('watch', function () {
@@ -109,9 +110,8 @@ gulp.task('browser-sync', function() {
     });
 });
 
-gulp.task('default', ['browser-sync', 'clean', 'watch'], function () {
-
-});
+gulp.task('build', ['clean', 'vendor', 'scripts', 'spritesheets', 'particles', 'tilesets', 'images', 'html']);
+gulp.task('default', ['webserver', 'browser-sync', 'build', 'watch']);
 
 
 
