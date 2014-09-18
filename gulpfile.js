@@ -10,6 +10,7 @@ var util = require('gulp-util');
 var buildbranch = require('buildbranch');
 var browserSync = require('browser-sync');
 var http = require('http');
+var deploy = require('gulp-gh-pages');
 var finalhandler = require('finalhandler');
 var serveStatic = require('serve-static');
 
@@ -24,6 +25,11 @@ var paths = {
     js: ['./vendor/*.js']
   },
   gameEntry: ['./game/main.js']
+};
+
+var options = { 
+    remoteUrl: "https://github.com/gnerkus/quadblocks.git",
+    branch: "gh-pages"
 };
 
 gulp.task('webserver', function () {
@@ -89,6 +95,12 @@ gulp.task('particles', function () {
 	return gulp.src(paths.images[3])
 	    .pipe(imagemin())
 	    .pipe(gulp.dest('dist/assets/particles/'));
+});
+
+// Run 'gulp deploy' to push changes to the gh-pages branch
+gulp.task('deploy', function () {
+    gulp.src("./dist/**/*")
+        .pipe(deploy(options));
 });
 
 gulp.task('watch', function () {
