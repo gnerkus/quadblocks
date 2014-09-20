@@ -23,8 +23,8 @@ GameState.prototype.create = function() {
     this.BULLET_SPEED = 500; // pixels/second
     this.NUMBER_OF_BULLETS = 20;
 
-    this.SHOT_DELAY_BIG = 200; // milliseconds (10 bullets/second)
-    this.BULLET_SPEED_BIG = 250; // pixels/second
+    this.SHOT_DELAY_BIG = 500; // milliseconds (10 bullets/second)
+    this.BULLET_SPEED_BIG = 125; // pixels/second
     this.NUMBER_OF_BULLETS_BIG = 5;
 
     this.MAX_SPEED = 250; // pixels/second
@@ -38,6 +38,10 @@ GameState.prototype.create = function() {
 
     // Make the gun collide with the world boundaries
     this.gun.body.collideWorldBounds = true;
+
+    this.enemies = this.game.add.group();
+    this.enemies.x = 480;
+    this.enemies.y = 240;
 
     // Create an object pool of bullets
     this.bulletPool = this.game.add.group();
@@ -85,7 +89,7 @@ GameState.prototype.create = function() {
         Phaser.Keyboard.D,
         Phaser.Keyboard.W,
         Phaser.Keyboard.S,
-        Phaser.Keyboard.SPACE
+        Phaser.Keyboard.F
     ]);
 
     // Show FPS
@@ -93,6 +97,8 @@ GameState.prototype.create = function() {
     this.fpsText = this.game.add.text(
     	20, 20, '', { font: '16px Arial', fill: '#ffffff' }
     );
+
+    this.game.time.events.loop(Phaser.Timer.SECOND, this.spawnEnemy, this);
 };
 
 GameState.prototype.shootBullet = function() {
@@ -169,8 +175,37 @@ GameState.prototype.shootBigBullet = function() {
 	bullet.body.velocity.y = Math.sin(bullet.rotation) * this.BULLET_SPEED_BIG;
 };
 
+// This method spawns enemies
+GameState.prototype.spawnEnemy = function () {
+	var enemy = this.game.add.sprite(0, 0, 'enemy');
+	this.game.physics.enable(enemy, Phaser.Physics.ARCADE);
+	enemy.health = 100;
+	enemy.body.velocity.x = -100;
+	enemy.body.velocity.y = -50;
+	this.enemies.add(enemy);
+};
+
+GameState.prototype.shootEnemy = function (bullet, enemy) {
+	bullet.kill();
+	enemy.damage(20);
+};
+
+GameState.prototype.bigShootEnemy = function (bullet, enemy) {
+	bullet.kill();
+
+	var emitter = this.game.add.emitter(enemy.body.x, enemy.body.y, 200);
+	emitter.makeParticles('enemyParticle');
+	emitter.start(true, 1000, 0, 0);
+
+	enemy.damage(100);
+};
+
 // The update() method is called every frame
 GameState.prototype.update = function() {
+    this.game.physics.arcade.overlap(this.bulletPool, this.enemies, this.shootEnemy, null, this);
+
+    this.game.physics.arcade.overlap(this.bigBulletPool, this.enemies, this.bigShootEnemy, null, this);
+
 	if (this.game.time.fps !== 0) {
 		this.fpsText.setText(this.game.time.fps + ' FPS');
 	}
@@ -185,7 +220,7 @@ GameState.prototype.update = function() {
 		this.shootBullet();
 	}
 
-	if (this.input.keyboard.isDown(Phaser.Keyboard.SPACE)) {
+	if (this.input.keyboard.isDown(Phaser.Keyboard.F)) {
 		this.shootBigBullet();
 	}
 
