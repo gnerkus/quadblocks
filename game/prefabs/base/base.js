@@ -7,6 +7,7 @@ var BasePrefab = function (game, x, y, sprite, animationConfig) {
 	x = x || 0;
 	y = y || 0;
 	sprite = sprite || null;
+    animationConfig = animationConfig || { 'moving': [0] };
 
     // Ensure the animationConfig consists of arrays
     for (var config in animationConfig) {
@@ -20,6 +21,10 @@ var BasePrefab = function (game, x, y, sprite, animationConfig) {
 
 	// Call super class constructor
     Phaser.Sprite.call(this, game, x, y, sprite);
+    this.anchor.setTo(0.5, 0.5);
+
+    // Give the prefab a physics body
+    this.game.physics.arcade.enable(this);
 
 
     /* Define animations
@@ -33,6 +38,11 @@ var BasePrefab = function (game, x, y, sprite, animationConfig) {
     for (var configObj in animationConfig) {
     	this.animations.add(configObj, animationConfig[configObj]);
     }
+
+    // Play the starting animation.
+    // I assume there is a config named 'right' until I can find
+    // a way to set the first item in the config
+    this.animations.play('right');
     
     // State object -- [configurable]
     this.state = {};

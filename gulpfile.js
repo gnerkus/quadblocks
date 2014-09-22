@@ -6,7 +6,10 @@ var deploy = require('gulp-gh-pages');
 var jshint = require('gulp-jshint');
 var imagemin = require('gulp-imagemin');
 var rename = require('gulp-rename');
+
+// This will not be used until I can determine how to seperate development from production
 var uglify = require('gulp-uglify');
+
 var browserSync = require('browser-sync');
 var finalhandler = require('finalhandler');
 var http = require('http');
@@ -32,7 +35,7 @@ var options = {
     branch: 'gh-pages'
 };
 
-gulp.task('webserver', function() {
+gulp.task('webserver', ['html'], function() {
     var serve = serveStatic('./dist');
 
     var server = http.createServer(function(req, res) {
@@ -59,17 +62,20 @@ gulp.task('scripts', function() {
             insertGlobals: true,
             debug: !gulp.env.production
         }))
-        .pipe(uglify())
+        // .pipe(uglify())
+        // .pipe(rename('game.min.js'))
+        .pipe(rename('game.js'))
         .pipe(gulp.dest('./dist/js/'));
 });
 
 gulp.task('vendor', function() {
     return gulp.src(paths.vendor.js)
-        .pipe(uglify())
+        // .pipe(uglify())
+        // .pipe(rename('phaser.min.js'))
         .pipe(gulp.dest('./dist/js/'));
 });
 
-gulp.task('html', function() {
+gulp.task('html', ['scripts', 'vendor', 'spritesheets', 'images', 'tilesets', 'particles'], function() {
     return gulp.src(paths.html)
         .pipe(gulp.dest('dist/'));
 });
@@ -104,7 +110,7 @@ gulp.task('deploy', function() {
         .pipe(deploy(options));
 });
 
-gulp.task('watch', function() {
+gulp.task('watch', ['browser-sync'], function() {
     // When a game source file changes, run tasks and reload browser
     gulp.watch(paths.game, ['scripts', browserSync.reload]);
     gulp.watch(paths.html, ['html', browserSync.reload]);
@@ -115,7 +121,7 @@ gulp.task('watch', function() {
 });
 
 // Start server with browser-sync
-gulp.task('browser-sync', function() {
+gulp.task('browser-sync', ['webserver'], function() {
     browserSync({
         server: {
             baseDir: './dist'
@@ -124,4 +130,4 @@ gulp.task('browser-sync', function() {
 });
 
 gulp.task('build', ['clean', 'vendor', 'scripts', 'spritesheets', 'particles', 'tilesets', 'images', 'html']);
-gulp.task('default', ['webserver', 'browser-sync', 'build', 'watch']);
+gulp.task('default', ['build', 'webserver', 'browser-sync', 'watch']);
