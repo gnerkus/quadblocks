@@ -69,7 +69,7 @@ BasePrefab.prototype.update = function () {
 
 BasePrefab.prototype.addBehaviour = function (behaviourObject) {
 	// Add the behaviourObject to the list of behaviours
-	this.components.push(behaviourObject.name);
+	this.behaviours.push(behaviourObject.name);
 
 	// Add behaviour attributes to the prefab's state
 	this.state[behaviourObject.name] = Object.create(behaviourObject.attribs);
