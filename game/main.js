@@ -1,6 +1,7 @@
 'use strict';
 
 var Player = require('./prefabs/characters/player');
+var Enemy = require('./prefabs/characters/enemy');
 
 var GameState = function(game) {
 
@@ -17,6 +18,7 @@ GameState.prototype.preload = function() {
 
 // Setup the example
 GameState.prototype.create = function() {
+    this.game.physics.startSystem(Phaser.Physics.ARCADE);
     // Set stage background color
     this.game.stage.backgroundColor = 0x4488cc;
 
@@ -61,10 +63,17 @@ GameState.prototype.spawnEnemy = function () {
     enemy.body.velocity.x = -100;
     enemy.body.velocity.y = -50;
     this.enemies.add(enemy);
+
+    // var enemy = new Enemy(this.game, 0, 0, 'enemy');
+    // enemy.setTarget(this.gun);
+    // this.enemies.add(enemy);
 };
 
 // The update() method is called every frame
 GameState.prototype.update = function() {
+    // collision handlers
+    this.game.physics.arcade.overlap(this.enemies, this.gun.state.primaryPool, this.shareBehaviours, null, this);
+
     if (this.game.time.fps !== 0) {
         this.fpsText.setText(this.game.time.fps + ' FPS');
     }
@@ -140,6 +149,10 @@ GameState.prototype.downInputIsActive = function() {
     isActive = this.input.keyboard.isDown(Phaser.Keyboard.S);
     
     return isActive;
+};
+
+GameState.prototype.shareBehaviours = function (enemy, bullet) {
+    enemy.changeState(bullet.getPublicState);
 };
 
 var game = new Phaser.Game(848, 450, Phaser.AUTO, 'game');

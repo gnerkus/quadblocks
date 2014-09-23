@@ -18,12 +18,17 @@ var BulletBehaviour = (function () {
                 this.rotation = rotation;
                 this.body.velocity.x = Math.cos(this.rotation) * this.bulletProperties.speed;
                 this.body.velocity.y = Math.sin(this.rotation) * this.bulletProperties.speed;
+            },
+
+            setDamage: function (damage) {
+                this.publicState.target.value = damage;
             }
         },
 
         behaviour: {
             'target': {
-                
+                action: 'damage',
+                value: null
             }
         },
 

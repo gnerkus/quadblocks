@@ -95,7 +95,7 @@ var MouseShooterBehaviour = (function () {
                 if (this.state.mouseShooter.lastBulletShotAt === undefined) {
                     this.lastBulletShotAt = 0;
                 }
-                if (this.game.time.now - this.lastBulletShotAt < PrimaryBullet.bulletProperties.shotDelay) {
+                if (this.game.time.now - this.lastBulletShotAt < PrimaryBullet.gunProperties.shotDelay) {
                     return;
                 }
                 this.lastBulletShotAt = this.game.time.now;
@@ -111,19 +111,50 @@ var MouseShooterBehaviour = (function () {
                 // Revive the bullet; make it alive.
                 bullet.revive();
 
+                bullet.checkWorldBounds = true;
+                bullet.outOfBoundsKill = true;
+
                 // Set the bullet position to the shooter's position
-                bullet.fireBullet(this.body.x, this.body.y, this.rotation);
+                bullet.fireBullet(this.x, this.y, this.rotation);
             },
 
             shootSecondary: function () {
+                /*
+                Secondary bullet should have been configured at this time.
+                 */
+                var SecondaryBullet = this.state.mouseShooter.secondaryBullet;
 
+                if (this.state.mouseShooter.lastBulletShotAt === undefined) {
+                    this.lastBulletShotAt = 0;
+                }
+                if (this.game.time.now - this.lastBulletShotAt < SecondaryBullet.gunProperties.shotDelay) {
+                    return;
+                }
+                this.lastBulletShotAt = this.game.time.now;
+                
+                // Get a dead bullet from the pool.
+                var bullet = this.state.mouseShooter.secondaryPool.getFirstDead();
+
+                // If there aren't any bullets available then don't shoot
+                if (bullet === null || bullet === undefined) {
+                    return;
+                }
+                
+                // Revive the bullet; make it alive.
+                bullet.revive();
+
+                bullet.checkWorldBounds = true;
+                bullet.outOfBoundsKill = true;
+
+                // Set the bullet position to the shooter's position
+                bullet.fireBullet(this.body.x, this.body.y, this.rotation);
             },
 
             createPrimaryBulletPool: function () {
                 var PrimaryBullet = this.state.mouseShooter.primaryBullet;
                 this.state.mouseShooter.primaryPool = this.game.add.group();
                 
-                for (var i = 0; i < PrimaryBullet.bulletProperties.bulletCount; i++) {
+                for (var i = 0; i < PrimaryBullet.gunProperties.bulletCount; i++) {
                     var bullet = new PrimaryBullet(this.game, 0, 0);
                     this.state.mouseShooter.primaryPool.add(bullet);
                     bullet.anchor.setTo(0.5, 0.5);
@@ -135,7 +166,7 @@ var MouseShooterBehaviour = (function () {
                 var SecondaryBullet = this.state.mouseShooter.secondaryBullet;
                 this.state.mouseShooter.secondaryPool = this.game.add.group();
                 
-                for (var i = 0; i < SecondaryBullet.bulletCount; i++) {
+                for (var i = 0; i < SecondaryBullet.gunProperties.bulletCount; i++) {
                     var bullet = new SecondaryBullet(this.game, 0, 0);
                     this.state.mouseShooter.secondaryPool.add(bullet);
                     bullet.anchor.setTo(0.5, 0.5);

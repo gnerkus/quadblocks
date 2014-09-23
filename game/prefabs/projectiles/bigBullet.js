@@ -25,12 +25,12 @@ BigBullet.prototype.update = function () {
 };
 
 BigBullet.prototype.bulletProperties = {
-    'shotDelay': 500,
-    'speed': 125,
-    'bulletCount': 5
+    'speed': 125
 };
 
-BigBullet.prototype.checkWorldBounds = true;
-BigBullet.prototype.outOfBoundsKill = true;
+BigBullet.gunProperties = {
+	'shotDelay': 500,
+	'bulletCount': 5
+};
 
 module.exports = BigBullet;

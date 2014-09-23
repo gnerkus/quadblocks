@@ -72,11 +72,11 @@ BasePrefab.prototype.addBehaviour = function (behaviourObject) {
 	this.behaviours.push(behaviourObject.name);
 
 	// Add behaviour attributes to the prefab's state
-	this.state[behaviourObject.name] = Object.create(behaviourObject.attribs);
+	this.state[behaviourObject.name] = behaviourObject.attribs;
 
 	// Add behaviour attributes to the prefab's publicState
     for (var behaviourIdx in behaviourObject.behaviour) {
-    	var behaviour = Object.create(behaviourObject.behavour[behaviourIdx]);
+    	var behaviour = Object.create(behaviourObject.behaviour[behaviourIdx]);
     	this.publicState[behaviourIdx] = behaviour;
     }
 
@@ -97,8 +97,8 @@ BasePrefab.prototype.addBehaviour = function (behaviourObject) {
     this['handle' + behaviourObject.name] = behaviourObject.handler.bind(this);
 };
 
-BasePrefab.prototype.getBehaviour = function () {
-	return this.behaviour;
+BasePrefab.prototype.getPublicState = function () {
+	return this.publicState;
 };
 
 BasePrefab.prototype.changeState = function (behaviour) {

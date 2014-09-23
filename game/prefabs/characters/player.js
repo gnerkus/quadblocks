@@ -7,22 +7,27 @@ var BasePrefab = require('./../base/base');
 // The Player will be controlled with the keyboard
 var keyboardMovement = require('./../../behaviours/controls/keyboardMovement');
 // The Player will be able to release projectiles
-var mouseShooter = require('./../../behaviours/actions/mouseShooter');
+var mouseShooter = require('./../../behaviours/abilities/mouseShooter');
+// The Player will be able to receive damage in contact with enemies
+var target = require('./../../behaviours/abilities/target');
 
 // Default bullet types for the Player
 var SmallBullet = require('./../projectiles/smallBullet');
 var BigBullet = require('./../projectiles/bigBullet');
 
 function Player (game, x, y, sprite, animationConfig) {
+	//debugger;
 	// Call super class constructor
     BasePrefab.call(this, game, x, y, sprite, animationConfig);
+
+    this.health = 100;
 
     // Enable the keyboard controls
     this.addBehaviour(keyboardMovement);
 
     // Configure the movement controls
     var movementConfig = {
-    	speed: 48,
+    	speed: 192,
     	right: 'D',
     	down: 'S',
     	left: 'A',
@@ -48,14 +53,17 @@ function Player (game, x, y, sprite, animationConfig) {
     this.createPrimaryBulletPool();
     this.createSecondaryBulletPool();
 
-
+    // Enable the target behaviour
+    this.addBehaviour(target);
 }
 
 Player.prototype = Object.create(BasePrefab.prototype);
 Player.prototype.constructor = Player;
 
 Player.prototype.update = function () {
-
+	for (var index in this.behaviourMethods) {
+		this[this.behaviourMethods[index]].call(this);
+	}
 };
 
 module.exports = Player;

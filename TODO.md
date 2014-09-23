@@ -1,8 +1,13 @@
 PRIMARY TASKS
 =============================================================================
 
-+ Test the player prefab.
-
++ Encapsulate 'player-follow' functionality in a behaviour
++ Create an enemy prefab. The prefab should have the 'player-follow' behaviour.
++ Encapsulate 'target' functionality in a behaviour. The target  behaviour defines an object that can be attacked.
++ Add target attributes to the 'bullet' and 'follow' behaviours' publicStates.
++ Add the 'target' behaviour to the player prefab.
++ Add collision handlers for player-enemy and bullet-enemy to the Play state.
++ Test (the player should receive damage on collision with enemies. Enemies should receive damage from bullets).
 
 
 SECONDARY TASKS
@@ -16,7 +21,7 @@ SECONDARY TASKS
 
 ## COMPLETED TASKS ##
 
-**scratching th game mechanic
+**scratching the game mechanic
 
 1 The player should be able to shoot when left-click is engaged.
 2 The player should move when WASD keys are pressed.
@@ -33,3 +38,4 @@ SECONDARY TASKS
 8 Encapsulate the bullet functionality into a behaviour object.
 9 Create a prefab for the bullet.
 10 Add the movement and shooting behaviours to the player prefab.
+11 Test (the player movement should be controlled via keyboard. The player must always face the cursor. The player should be able to shoot in the direction it's facing).

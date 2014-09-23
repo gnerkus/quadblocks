@@ -15,6 +15,7 @@ function SmallBullet (game, x, y) {
     BasePrefab.call(this, game, x, y, sprite, animationConfig);
 
     this.addBehaviour(bullet); // Enable the bullet behaviour
+    this.setDamage(this.bulletProperties.damage);
 }
 
 SmallBullet.prototype = Object.create(BasePrefab.prototype);
@@ -24,13 +25,14 @@ SmallBullet.prototype.update = function () {
 
 };
 
-SmallBullet.prototype.bulletProperties = {
+SmallBullet.gunProperties = {
     'shotDelay': 100,
-    'speed': 500,
     'bulletCount': 20
 };
 
-SmallBullet.prototype.checkWorldBounds = true;
-SmallBullet.prototype.outOfBoundsKill = true;
+SmallBullet.prototype.bulletProperties = {
+    'speed': 500,
+    'damage': 20
+};
 
 module.exports = SmallBullet;
