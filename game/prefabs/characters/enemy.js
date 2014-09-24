@@ -7,7 +7,7 @@ var BasePrefab = require('./../base/base');
 // The Enemy will be able to receive damage from bullets
 var target = require('./../../behaviours/abilities/target');
 // The Enemy will follow a detected player prefab
-var follower = require('./../../behaviours/intelligence/follower');
+var follower = require('./../../behaviours/abilities/follower');
 // The Enemy will be able to detect a player prefab within a specified radius
 var turret = require('./../../behaviours/intelligence/turret');
 // The Enemy will be able to deal damage to the player upon contact
@@ -28,12 +28,15 @@ function Enemy (game, x, y, sprite, animationConfig) {
     // Call enemy.setTarget(this.gun) in the main.js as the enemy instance is created
     this.addBehaviour(follower);
     // Set the minimum distance and maximum speed
-    this.setMinDistance(this.enemyProperties.minDistance);
-    this.setMaxSpeed(this.enemyProperties.speed);
+    this.setMinDistanceFromTarget(this.enemyProperties.minDistance);
+    this.setMaxDistanceFromTarget(this.enemyProperties.maxDistance);
+    this.setMaxFollowSpeed(this.enemyProperties.speed);
 
 
     // Enable the turret behaviour
     this.addBehaviour(turret);
+    this.createRadar(this.enemyProperties.radarSprite);
+    this.setTurretAction('setTargetToFollow');
 
 
     // Enable the toxic behaviour
@@ -53,7 +56,9 @@ Enemy.prototype.update = function () {
 Enemy.prototype.enemyProperties = {
     'speed': 250,
     'minDistance': 32,
-    'damage': 20
+    'maxDistance': 128,
+    'damage': 20,
+    'radarSprite': 'radar'
 };
 
 module.exports = Enemy;

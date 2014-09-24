@@ -10,6 +10,8 @@ var keyboardMovement = require('./../../behaviours/controls/keyboardMovement');
 var mouseShooter = require('./../../behaviours/abilities/mouseShooter');
 // The Player will be able to receive damage in contact with enemies
 var target = require('./../../behaviours/abilities/target');
+// The Player will be visible on enemy radars
+var trigger = require('./../../behaviours/abilities/trigger');
 
 // Default bullet types for the Player
 var SmallBullet = require('./../projectiles/smallBullet');
@@ -55,6 +57,10 @@ function Player (game, x, y, sprite, animationConfig) {
 
     // Enable the target behaviour
     this.addBehaviour(target);
+
+    // Enable the trigger behaviour
+    this.addBehaviour(trigger);
+    this.setTrigger();
 }
 
 Player.prototype = Object.create(BasePrefab.prototype);
