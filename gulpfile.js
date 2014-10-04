@@ -1,20 +1,31 @@
 'use strict';
 
 var gulp = require('gulp');
-var browserify = require('gulp-browserify');
-var deploy = require('gulp-gh-pages');
-var jshint = require('gulp-jshint');
-var imagemin = require('gulp-imagemin');
-var rename = require('gulp-rename');
 
-// This will not be used until I can determine how to seperate development from production
+var browserify = require('gulp-browserify');
+var browserSync = require('browser-sync');
+var deploy = require('gulp-gh-pages');
+var imagemin = require('gulp-imagemin');
+var jshint = require('gulp-jshint');
+var reload = browserSync.reload;
+var rename = require('gulp-rename');
+var rimraf = require('rimraf');
 var uglify = require('gulp-uglify');
 
-var browserSync = require('browser-sync');
 var finalhandler = require('finalhandler');
 var http = require('http');
-var rimraf = require('rimraf');
 var serveStatic = require('serve-static');
+
+gulp.task('serve', function() {
+    var serve = serveStatic('./dist');
+
+    var server = http.createServer(function(req, res) {
+        var done = finalhandler(req, res);
+        serve(req, res, done);
+    });
+
+    server.listen(8000);
+});
 
 var paths = {
     game: ['./game/**/*.js'],
@@ -35,47 +46,42 @@ var options = {
     branch: 'gh-pages'
 };
 
-gulp.task('webserver', ['html'], function() {
-    var serve = serveStatic('./dist');
-
-    var server = http.createServer(function(req, res) {
-        var done = finalhandler(req, res);
-        serve(req, res, done);
-    });
-
-    server.listen(8000);
-});
-
-/**
- * removes css- and js-dist folder.
- */
+// Clean output directory -- CLEARED
 gulp.task('clean', function(cb) {
     rimraf.sync('./dist', cb);
 });
 
-gulp.task('scripts', function() {
+// Lint Javascript -- CLEARED
+gulp.task('jshint', function () {
+    return gulp.src(paths.game)
+        .pipe(jshint())
+        .pipe(jshint.reporter());
+});
+
+// Build source Javascript for the game -- CLEARED
+gulp.task('scripts', ['jshint'], function() {
     // Single entry point to browserify
     return gulp.src(paths.gameEntry)
-        .pipe(jshint())
-        .pipe(jshint.reporter())
         .pipe(browserify({
-            insertGlobals: true,
-            debug: !gulp.env.production
+            insertGlobals: true
         }))
-        // .pipe(uglify())
-        // .pipe(rename('game.min.js'))
         .pipe(rename('game.js'))
+        .pipe(gulp.dest('./dist/js/'))
+        .pipe(uglify())
+        .pipe(rename('game.min.js'))
         .pipe(gulp.dest('./dist/js/'));
 });
 
+// Build vendor Javascript -- CLEARED
 gulp.task('vendor', function() {
     return gulp.src(paths.vendor.js)
-        // .pipe(uglify())
-        // .pipe(rename('phaser.min.js'))
+        .pipe(gulp.dest('./dist/js/'))
+        .pipe(uglify())
+        .pipe(rename({extname: '.min.js'}))
         .pipe(gulp.dest('./dist/js/'));
 });
 
-gulp.task('html', ['scripts', 'vendor', 'spritesheets', 'images', 'tilesets', 'particles'], function() {
+gulp.task('html', ['scripts'], function() {
     return gulp.src(paths.html)
         .pipe(gulp.dest('dist/'));
 });
@@ -98,10 +104,26 @@ gulp.task('tilesets', function() {
         .pipe(gulp.dest('dist/assets/tilesets/'));
 });
 
+// Optimize particle images -- CLEARED!
 gulp.task('particles', function() {
     return gulp.src(paths.images[3])
         .pipe(imagemin())
         .pipe(gulp.dest('dist/assets/particles/'));
+});
+
+gulp.task('serve:dist', ['serve'], function () {
+    browserSync({
+        notify: true,
+        server: 'dist'
+    });
+
+    gulp.watch(paths.game, ['jshint', 'scripts', reload]);
+    gulp.watch(paths.vendor.js, ['vendor', reload]);
+    gulp.watch(paths.html, ['html', reload]);
+    gulp.watch(paths.images[0], ['spritesheets', reload]);
+    gulp.watch(paths.images[1], ['images', reload]);
+    gulp.watch(paths.images[2], ['tilesets', reload]);
+    gulp.watch(paths.images[3], ['particles', reload]);
 });
 
 // Run 'gulp deploy' to push changes to the gh-pages branch
@@ -110,24 +132,6 @@ gulp.task('deploy', function() {
         .pipe(deploy(options));
 });
 
-gulp.task('watch', ['browser-sync'], function() {
-    // When a game source file changes, run tasks and reload browser
-    gulp.watch(paths.game, ['scripts', browserSync.reload]);
-    gulp.watch(paths.html, ['html', browserSync.reload]);
-    gulp.watch(paths.images[0], ['spritesheets', browserSync.reload]);
-    gulp.watch(paths.images[1], ['images', browserSync.reload]);
-    gulp.watch(paths.images[2], ['tilesets', browserSync.reload]);
-    gulp.watch(paths.images[3], ['particles', browserSync.reload]);
-});
+gulp.task('build', ['clean', 'vendor', 'tilesets', 'spritesheets', 'images', 'particles', 'html']);
+gulp.task('default', ['build']);
 
-// Start server with browser-sync
-gulp.task('browser-sync', ['webserver'], function() {
-    browserSync({
-        server: {
-            baseDir: './dist'
-        }
-    });
-});
-
-gulp.task('build', ['clean', 'vendor', 'scripts', 'spritesheets', 'particles', 'tilesets', 'images', 'html']);
-gulp.task('default', ['build', 'webserver', 'browser-sync', 'watch']);

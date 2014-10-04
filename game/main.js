@@ -14,6 +14,7 @@ GameState.prototype.preload = function() {
     this.game.load.spritesheet('player', '/assets/spritesheets/player.png', 48, 48);
     this.game.load.spritesheet('enemy', '/assets/spritesheets/enemy.png', 64, 64);
     this.game.load.image('enemyParticle', '/assets/spritesheets/enemyParticle.png');
+    this.game.load.image('radar', '/assets/spritesheets/radar.png');
 };
 
 // Setup the example
@@ -22,14 +23,24 @@ GameState.prototype.create = function() {
     // Set stage background color
     this.game.stage.backgroundColor = 0x4488cc;
 
-    this.gun = new Player(this.game, 50, this.game.height/2, 'player');
-    this.game.add.existing(this.gun);
+    this.player = new Player(this.game, 50, this.game.height/2);
+    this.game.add.existing(this.player);
 
-    this.gun.body.collideWorldBounds = true;
+    this.player.body.collideWorldBounds = true;
 
     this.enemies = this.game.add.group();
-    this.enemies.x = 480;
-    this.enemies.y = 240;
+    this.enemies.x = this.game.width/2;
+    this.enemies.y = this.game.height/2;
+
+    var enemyOne = new Enemy(this.game, 0, 0);
+    this.game.add.existing(enemyOne);
+    this.enemies.add(enemyOne);
+    this.enemies.forEach(function (enemy) {
+        console.log(enemy);
+        enemy.lineOfSightRegisterTarget(this.player);
+        enemy.lineOfSightInit();
+    }, this);
+    
 
     // Simulate a pointer click/tap input at the center of the stage when the example begins running
     this.game.input.activePointer.x = this.game.width/2;
@@ -42,8 +53,7 @@ GameState.prototype.create = function() {
         Phaser.Keyboard.A,
         Phaser.Keyboard.D,
         Phaser.Keyboard.W,
-        Phaser.Keyboard.S,
-        Phaser.Keyboard.F
+        Phaser.Keyboard.S
     ]);
 
     // Show FPS
@@ -52,59 +62,42 @@ GameState.prototype.create = function() {
         20, 20, '', { font: '16px Arial', fill: '#ffffff' }
     );
 
-    this.game.time.events.loop(Phaser.Timer.SECOND, this.spawnEnemy, this);
-};
-
-// This method spawns enemies
-GameState.prototype.spawnEnemy = function () {
-    var enemy = this.game.add.sprite(0, 0, 'enemy');
-    this.game.physics.enable(enemy, Phaser.Physics.ARCADE);
-    enemy.health = 100;
-    enemy.body.velocity.x = -100;
-    enemy.body.velocity.y = -50;
-    this.enemies.add(enemy);
-
-    // var enemy = new Enemy(this.game, 0, 0, 'enemy');
-    // enemy.setTarget(this.gun);
-    // this.enemies.add(enemy);
 };
 
 // The update() method is called every frame
 GameState.prototype.update = function() {
-    // collision handlers
-    this.game.physics.arcade.overlap(this.enemies, this.gun.state.primaryPool, this.shareBehaviours, null, this);
+    this.game.physics.arcade.overlap(this.player.gun.bulletPool, this.enemies, this.hitEnemy, null, this);
 
     if (this.game.time.fps !== 0) {
         this.fpsText.setText(this.game.time.fps + ' FPS');
     }
 
-    // Shoot a bullet
-    if (this.game.input.activePointer.isDown) {
-        // this.player.shootPrimary();
-        this.gun.shootPrimary();
-    }
-
     if (this.leftInputIsActive()) {
         // If the LEFT key is down, set the player velocity to move left
-        this.gun.keySignalListener({direction: {x: -1, y: 0}});
+        this.player.eightDirectionKeySignalListener({direction: {x: -1, y: 0}});
     } else if (this.rightInputIsActive()) {
         // If the RIGHT key is down, set the player velocity to move right
-        this.gun.keySignalListener({direction: {x: 1, y: 0}});
+        this.player.eightDirectionKeySignalListener({direction: {x: 1, y: 0}});
     } else {
         // Stop the player from moving horizontally
-        this.gun.body.velocity.x = 0;
+        this.player.body.velocity.x = 0;
     }
 
     if (this.upInputIsActive()) {
         // If the LEFT key is down, set the player velocity to move left
-        this.gun.keySignalListener({direction: {x: 0, y: -1}});
+        this.player.eightDirectionKeySignalListener({direction: {x: 0, y: -1}});
     } else if (this.downInputIsActive()) {
         // If the RIGHT key is down, set the player velocity to move right
-        this.gun.keySignalListener({direction: {x: 0, y: 1}});
+        this.player.eightDirectionKeySignalListener({direction: {x: 0, y: 1}});
     } else {
         // Stop the player from moving horizontally
-        this.gun.body.velocity.y = 0;
+        this.player.body.velocity.y = 0;
     }
+
+    if (this.game.input.activePointer.isDown) {
+        this.player.gun.shoot();
+    }
+
 };
 
 // This function should return true when the player activates the "go left" control
@@ -151,8 +144,9 @@ GameState.prototype.downInputIsActive = function() {
     return isActive;
 };
 
-GameState.prototype.shareBehaviours = function (enemy, bullet) {
-    enemy.changeState(bullet.getPublicState);
+GameState.prototype.hitEnemy = function (bullet, enemy) {
+    enemy.damage(bullet.damage);
+    bullet.kill();
 };
 
 var game = new Phaser.Game(848, 450, Phaser.AUTO, 'game');
