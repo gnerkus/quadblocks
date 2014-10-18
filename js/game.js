@@ -2,676 +2,241 @@
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 'use strict';
 
-var EightDirectionBehaviour = (function () {
-    var state = {
-        name: 'eightDirection',
+//var Tile = require('./prefabs/characters/tile');
 
-        attribs: {
-            maxSpeed: 144,
-            defaultControls: true,
-            directions: 0,
-            ignoreInput: false
-        },
-
-        updateMethods: {
-            
-        },
-
-        methods: {
-            eightDirectionInit: function () {
-                // Enable physics
-                if (!this.body) {
-                    this.game.physics.arcade.enable(this);
-                }
-            },
-
-            eightDirectionKeySignalListener: function (keypressSignal) {
-            	/*
-            	The keypressSignal looks like this:
-            	{
-	                direction: {
-	                    x: 0,
-	                    y: 1
-	                }
-            	}
-            	In this example the signal instructs the player to move downwards.
-            	 */
-                if (!this.eightDirection.ignoreInput) {
-                    this.body.velocity.x = keypressSignal.direction.x * this.eightDirection.maxSpeed;
-                    this.body.velocity.y = keypressSignal.direction.y * this.eightDirection.maxSpeed;
-                }
-            },
-
-            eightDirectionReverse: function () {
-                this.body.velocity.x *= -1;
-                this.body.velocity.y *= -1;
-            },
-
-            eightDirectionSetIgnoreInput: function (ignore) {
-                this.eightDirection.ignoreInput = ignore;
-            },
-
-            eightDirectionSetMaxSpeed: function (speed) {
-                this.eightDirection.maxSpeed = speed;
-            },
-
-            eightDirectionStop: function () {
-                this.body.velocity.x = 0;
-                this.body.velocity.y = 0;
-            }
-
-        }
-
-    };
-
-    return state;
-}());
-
-module.exports = EightDirectionBehaviour;
-
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/behaviours/controls/eightDirection.js","/behaviours/controls")
-},{"1YiZ5S":14,"buffer":11}],2:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-/**
- * The Line-Of-Sight behaviour allows the ability to check if two objects can 
- * 'see' each other. More precisely, it will check if there are any obstacles
- * blocking a line between the two objects
- */
-
-var LineOfSightBehaviour = (function () {
-	var state = {
-		name: 'lineOfSight',
-
-		attribs: {
-			obstacles: [], // the obstacles that can block the line-of-sight
-            range: 48, // the maximum distance in pixels that line-of-sight can reach
-            coneOfView: 360, // the angle of the cone of view
-            target: null,
-            cone: null
-		},
-
-		updateMethods: {
-            
-		},
-
-		methods: {
-			lineOfSightMoveCone: function () {
-            	this.lineOfSight.cone.position.x = this.body.center.x;
-            	this.lineOfSight.cone.position.y = this.body.center.y;
-            },
-
-            lineOfSightInit: function () {
-                this.lineOfSightCreateCone();
-            },
-
-            lineOfSightRegisterTarget: function (target) {
-            	this.lineOfSight.target = target;
-            },
-
-            lineOfSightCreateCone: function () {
-            	this.lineOfSight.cone = null;
-            	/*var x = this.x;
-            	var y = this.y;
-
-            	if (this.parent instanceof Phaser.Group) {
-                    x = this.parent.x;
-                    y = this.parent.y;
-            	}*/
-
-			    this.lineOfSight.cone = this.game.add.sprite(this.body.center.x, this.body.center.y, 'radar');
-			    this.lineOfSight.cone.anchor.setTo(0.5, 0.5);
-            },
-
-            lineOfSightCanSeeTarget: function () {
-                return this.lineOfSight.cone.overlap(this.lineOfSight.target);
-            },
-
-            lineOfSightSetRange: function (range) {
-                this.lineOfSight.range = range;
-                this.lineOfSightCreateCone();
-            }
-		}
-	};
-
-	return state;
-}());
-
-module.exports = LineOfSightBehaviour;
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/behaviours/intelligence/lineOfSight.js","/behaviours/intelligence")
-},{"1YiZ5S":14,"buffer":11}],3:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-/**
- * The Bullet behaviour simply moves an object forwards at an angle.
- * However, it also provides other properties like bouncing and gravity.
- */
-
-var BulletBehaviour = (function () {
-    var state = {
-        name: 'bullet',
-
-        attribs: {
-            maxSpeed: 480,
-            gravity: 0,
-            startX: 0,
-            startY: 0
-        },
-
-        updateMethods: {
-            
-        },
-
-        methods: {
-            bulletInit: function () {
-                // Enable physics
-                if (!this.body) {
-                    this.game.physics.arcade.enable(this);
-                }
-            },
-
-            bulletSetMaxSpeed: function (speed) {
-                this.bullet.maxSpeed = speed;
-            },
-
-            bulletSetEnabled: function (x, y, angle) {
-                this.reset(x, y);
-                this.checkWorldBounds = true;
-                this.outOfBoundsKill = true;
-                this.bullet.startX = this.body.position.x;
-                this.bullet.startY = this.body.position.y;
-                this.angle = angle;
-
-                this.game.physics.arcade.velocityFromAngle(this.angle, this.bullet.maxSpeed, this.body.velocity);
-            },
-
-            bulletDistanceTravelled: function () {
-                return this.game.math.distance(this.bullet.startX, this.bullet.startY, this.body.position.x, this.body.position.y);
-            },
-
-            bulletSetGravity: function (x, y) {
-                if (!this.body.allowGravity) {
-                    this.body.allowGravity = true;
-                }
-
-                this.body.gravity.x = x;
-                this.body.gravity.y = y;
-            }
-
-        }
-
-    };
-
-    return state;
-}());
-
-module.exports = BulletBehaviour;
-
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/behaviours/movement/bullet.js","/behaviours/movement")
-},{"1YiZ5S":14,"buffer":11}],4:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-var FollowBehaviour = (function () {
-	var state = {
-		name: 'follow',
-
-		attribs: {
-			target: null,
-			maxSpeed: 48,
-			isFollowing: false
-		},
-
-		updateMethods: {
-            
-		},
-
-		methods: {
-			followInit: function () {
-
-			},
-
-			followSetFollowingState: function () {
-            	this.follow.isFollowing = !!this.follow.target;
-            },
-
-            followFollowTarget: function () {
-            	/*if (this.follow.isFollowing) {
-            		this.game.physics.arcade.moveToObject(this, this.follow.target, this.follow.maxSpeed); 
-            	}*/
-            	if (this.follow.isFollowing) {
-            		// Calculate the angle to the target
-	                var rotation = this.game.math.radToDeg(this.game.math.angleBetween(this.body.x, this.body.y, this.follow.target.x, this.follow.target.y));
-
-	                // Calculate velocity vector based on rotation and this.MAX_SPEED
-	                this.body.velocity.x = Math.cos(rotation) * this.follow.maxSpeed;
-	                this.body.velocity.y = Math.sin(rotation) * this.follow.maxSpeed;
-            	}
-            },
-
-            followSetTarget: function (target) {
-            	this.follow.target = target;
-            },
-
-            followSetMaxSpeed: function (speed) {
-                this.follow.maxSpeed = speed;
-            },
-
-            followStop: function () {
-            	this.follow.target = null;
-            }
-		}
-	};
-
-	return state;
-}());
-
-module.exports = FollowBehaviour;
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/behaviours/movement/follow.js","/behaviours/movement")
-},{"1YiZ5S":14,"buffer":11}],5:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-var Player = require('./prefabs/characters/player');
-var Enemy = require('./prefabs/characters/enemy');
-
+/* Initialize state variables */
 var GameState = function(game) {
-
+    //this.tileWidth = 48;
+    this.selectedTile = null; /* a pointer to the tile that has been clicked */
+    this.allowInput = true; /* Disable input while gems are dropping */
+    this.minMatch = 3; /* The minimum number of tiles of the same colour that would be considered a match. */
 };
 
-//Load images and sounds
+
+/* Load images and sounds */
 GameState.prototype.preload = function() {
-    this.game.load.spritesheet('smallBullet', '/assets/spritesheets/bullet.png', 8, 8);
-    this.game.load.spritesheet('bigBullet', '/assets/spritesheets/bigBullet.png', 16, 16);
-    this.game.load.spritesheet('player', '/assets/spritesheets/player.png', 48, 48);
-    this.game.load.spritesheet('enemy', '/assets/spritesheets/enemy.png', 64, 64);
-    this.game.load.image('enemyParticle', '/assets/spritesheets/enemyParticle.png');
-    this.game.load.image('radar', '/assets/spritesheets/radar.png');
+	/* Set the background to white */
+	this.game.stage.backgroundColor = 0xffffff;
+
+	//this.load.spritesheet('tileFaces', './assets/tilesets/gemTileset.png', 48, 48, 4);
+
+	/* Load the tilemap and the tileset */
+    this.load.tilemap('board', './assets/levels/quadblocks.json', null, Phaser.Tilemap.TILED_JSON);
+    this.load.image('gemTileset', './assets/tilesets/gemTileset.png');
 };
 
-// Setup the example
+/* Create game objects */
 GameState.prototype.create = function() {
-    this.game.physics.startSystem(Phaser.Physics.ARCADE);
-    // Set stage background color
-    this.game.stage.backgroundColor = 0x4488cc;
+    //this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    this.player = new Player(this.game, 50, this.game.height/2);
-    this.game.add.existing(this.player);
+    /* Create the map */
+    this.map = this.game.add.tilemap('board');
+    this.map.addTilesetImage('gemTileset');
+    this.layer = this.map.createLayer('Tile Layer 1');
+    this.layer.resizeWorld();
 
-    this.player.body.collideWorldBounds = true;
+    /* Shuffle the tiles. The tiles are initially arranged in order */
+    this.map.shuffle(0, 0, 6, 10, this.layer);
 
-    this.enemies = this.game.add.group();
-    this.enemies.x = this.game.width/2;
-    this.enemies.y = this.game.height/2;
-
-    var enemyOne = new Enemy(this.game, 0, 0);
-    this.game.add.existing(enemyOne);
-    this.enemies.add(enemyOne);
-    this.enemies.forEach(function (enemy) {
-        console.log(enemy);
-        enemy.lineOfSightRegisterTarget(this.player);
-        enemy.lineOfSightInit();
-    }, this);
-    
-
-    // Simulate a pointer click/tap input at the center of the stage when the example begins running
-    this.game.input.activePointer.x = this.game.width/2;
-    this.game.input.activePointer.y = this.game.height/2;
-
-    // Capture certain keys to prevent their default actions in the browser.
-    // This is only necessary because this is an HTML5 game. Games on other
-    // platforms may not need code like this.
-    this.game.input.keyboard.addKeyCapture([
-        Phaser.Keyboard.A,
-        Phaser.Keyboard.D,
-        Phaser.Keyboard.W,
-        Phaser.Keyboard.S
-    ]);
-
-    // Show FPS
-    this.game.time.advancedTiming = true;
-    this.fpsText = this.game.add.text(
-        20, 20, '', { font: '16px Arial', fill: '#ffffff' }
-    );
-
+    /* Add a mouse input listener to the state.*/
+    this.game.input.onDown.add(this.getTile, this);
 };
 
-// The update() method is called every frame
+
 GameState.prototype.update = function() {
-    this.game.physics.arcade.overlap(this.player.gun.bulletPool, this.enemies, this.hitEnemy, null, this);
+    
 
-    if (this.game.time.fps !== 0) {
-        this.fpsText.setText(this.game.time.fps + ' FPS');
-    }
+};
 
-    if (this.leftInputIsActive()) {
-        // If the LEFT key is down, set the player velocity to move left
-        this.player.eightDirectionKeySignalListener({direction: {x: -1, y: 0}});
-    } else if (this.rightInputIsActive()) {
-        // If the RIGHT key is down, set the player velocity to move right
-        this.player.eightDirectionKeySignalListener({direction: {x: 1, y: 0}});
+/**
+ * Select a tile or move the selected tile.
+ * @return { null }
+ */
+GameState.prototype.getTile = function () {
+	/* Convert the mouse coordinated to tilemap coordinates */
+	var x = this.layer.getTileX(this.game.input.activePointer.x);
+	var y = this.layer.getTileY(this.game.input.activePointer.y);
+
+	if (x === undefined || y === undefined) {
+		return;
+	}
+
+    /* Get the tile at the specified coordinates */
+	var tile = this.map.getTile(x, y, this.layer);
+
+    /* Make the tile the selected tile if there's no selected tile. */
+    if (!this.selectedTile) {
+    	this.selectedTile = tile;
     } else {
-        // Stop the player from moving horizontally
-        this.player.body.velocity.x = 0;
+    	//debugger;
+    	var selected = this.selectedTile;
+
+        /* Determine if the tile can be moved to the clicked position. */
+    	if (this.checkTileMove(selected, tile)) {
+    		if (this.checkMatches(selected, tile) || this.checkMatches(tile, selected)) {
+    			this.swapTiles(selected, tile);
+
+		    	this.selectedTile = null;
+    		} else {
+    			return;
+    		}
+            
+    	} else {
+            return;
+    	}
+    }
+};
+
+
+/**
+ * Determine if a tile can be moved to the point clicked.
+ * Returns true if the tile can be moved to the destination.
+ * @param {Tile} selTile the previously selected tile
+ * @param {Tile} destTile the current tile that was clicked on
+ * @return { null } 
+ */
+GameState.prototype.checkTileMove = function (selTile, destTile) {
+	// if the destination tile is two 'blocks' or more to the right
+    if (destTile.x > selTile.x + 1 ||
+        destTile.x < selTile.x - 1 || 
+        destTile.y > selTile.y + 1 ||
+        destTile.y < selTile.y - 1 ) {
+    	return false;
     }
 
-    if (this.upInputIsActive()) {
-        // If the LEFT key is down, set the player velocity to move left
-        this.player.eightDirectionKeySignalListener({direction: {x: 0, y: -1}});
-    } else if (this.downInputIsActive()) {
-        // If the RIGHT key is down, set the player velocity to move right
-        this.player.eightDirectionKeySignalListener({direction: {x: 0, y: 1}});
-    } else {
-        // Stop the player from moving horizontally
-        this.player.body.velocity.y = 0;
+    return true;
+};
+
+
+/**
+ * Swap two tiles.
+ * @param  {Tile} selTile  The previously selected tile.
+ * @param  {Tile} destTile The current tile that was clicked on.
+ * @return {null}          
+ */
+GameState.prototype.swapTiles = function (selTile, destTile) {
+	this.map.removeTile(selTile.x, selTile.y, this.layer);
+	this.map.putTile(destTile, selTile.x, selTile.y, this.layer);
+	this.map.removeTile(destTile.x, destTile.y, this.layer);
+	this.map.putTile(selTile, destTile.x, destTile.y, this.layer);
+
+    //var movedTile = this.map.getTile(destTile.x, destTile.y, this.layer);
+	this.clearTiles(selTile, destTile);
+};
+
+
+GameState.prototype.checkMatches = function (selTile, destTile) {
+	var countUp = this.countSameTiles(destTile, 0, -1, selTile.index);
+	var countDown = this.countSameTiles(destTile, 0, 1, selTile.index);
+	var countLeft = this.countSameTiles(destTile, -1, 0, selTile.index);
+	var countRight = this.countSameTiles(destTile, 1, 0, selTile.index);
+	
+    var countHoriz = countLeft + countRight + 1;
+    var countVertical = countUp + countDown + 1;
+
+    if (countHoriz >= this.minMatch || countVertical >= this.minMatch) {
+    	return true;
     }
 
-    if (this.game.input.activePointer.isDown) {
-        this.player.gun.shoot();
+    return false;
+};
+
+
+GameState.prototype.countSameTiles = function (startTile, moveX, moveY, idx) {
+    var curX = startTile.x + moveX;
+	var curY = startTile.y + moveY;
+	var count = 0;
+	var currentTile = this.map.getTile(curX, curY, this.layer);
+	while (currentTile && currentTile.index === idx) {
+		count++;
+		curX += moveX;
+		curY += moveY;
+		currentTile = this.map.getTile(curX, curY, this.layer);
+	}
+	return count;
+};
+
+
+GameState.prototype.clearTiles = function (selTile, destTile) {
+    var countUp = this.countSameTiles(destTile, 0, -1, selTile.index);
+	var countDown = this.countSameTiles(destTile, 0, 1, selTile.index);
+	var countLeft = this.countSameTiles(destTile, -1, 0, selTile.index);
+	var countRight = this.countSameTiles(destTile, 1, 0, selTile.index);
+	
+    var countHoriz = countLeft + countRight + 1;
+    var countVertical = countUp + countDown + 1;
+    var startHoriz = destTile.x - countLeft;
+    var endHoriz = destTile.x + countRight;
+    var startVertical = destTile.y - countUp;
+    var endVertical = destTile.y + countDown;
+
+    if (countHoriz >= this.minMatch) {
+    	for (var i = startHoriz; i <= endHoriz; i++) {
+    		this.map.removeTile(i, destTile.y, this.layer);
+    	}
+    }
+    if (countVertical >= this.minMatch) {
+    	for (var j = startVertical; j <= endVertical; j++) {
+    		this.map.removeTile(destTile.x, j, this.layer);
+    	}
     }
 
+    var dropDuration = this.dropGems();
+    this.game.time.events.add(dropDuration * 100, this.refillBoard, this);
 };
 
-// This function should return true when the player activates the "go left" control
-// In this case, either holding the right arrow or tapping or clicking on the left
-// side of the screen.
-GameState.prototype.leftInputIsActive = function() {
-    var isActive = false;
 
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.A);
-    
-    return isActive;
+/**
+ * Look for gems with empty spaces beneath them and drop them.
+ * @return { null }
+ */
+GameState.prototype.dropGems = function () {
+    var dropRowCountMax = 0;
+    for (var i = 0; i < 6; i++) {
+    	var dropRowCount = 0;
+    	for (var j = 9; j >= 0; j--) {
+    		var tile = this.map.getTile(i, j, this.layer);
+    		if (tile === null) {
+    			dropRowCount++;
+    		} else if (dropRowCount > 0) {
+    			this.map.putTile(tile, i, j + dropRowCount, this.layer);
+    			this.map.removeTile(i, j, this.layer);
+    		}
+    	}
+    	dropRowCountMax = Math.max(dropRowCountMax, dropRowCount);
+    }
+    return dropRowCountMax;
 };
 
-// This function should return true when the player activates the "go right" control
-// In this case, either holding the right arrow or tapping or clicking on the right
-// side of the screen.
-GameState.prototype.rightInputIsActive = function() {
-    var isActive = false;
 
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.D);
-    
-    return isActive;
+GameState.prototype.refillBoard = function () {
+    var maxMissTiles = 0;
+    for (var i = 0; i < 6; i++) {
+    	var missTiles = 0;
+    	for (var j = 9; j >= 0; j--) {
+    		var tile = this.map.getTile(i, j, this.layer);
+    		if (tile === null) {
+    			missTiles++;
+    			var newTile = this.map.getTile(Math.floor(Math.random() * 6), 9, this.layer);
+    			this.map.putTile(newTile, i, j, this.layer);
+    		}
+    	}
+    	maxMissTiles = Math.max(missTiles, maxMissTiles);
+    }
+    game.time.events.add(maxMissTiles * 2 * 500, this.boardRefilled, this);
 };
 
-// This function should return true when the player activates the "go left" control
-// In this case, either holding the right arrow or tapping or clicking on the left
-// side of the screen.
-GameState.prototype.upInputIsActive = function() {
-    var isActive = false;
-
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.W);
-    
-    return isActive;
+GameState.prototype.boardRefilled = function () {
+	this.allowInput = true;
 };
 
-// This function should return true when the player activates the "go left" control
-// In this case, either holding the right arrow or tapping or clicking on the left
-// side of the screen.
-GameState.prototype.downInputIsActive = function() {
-    var isActive = false;
 
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.S);
-    
-    return isActive;
-};
-
-GameState.prototype.hitEnemy = function (bullet, enemy) {
-    enemy.damage(bullet.damage);
-    bullet.kill();
-};
-
-var game = new Phaser.Game(848, 450, Phaser.AUTO, 'game');
+var game = new Phaser.Game(288, 480, Phaser.AUTO, 'game');
 game.state.add('game', GameState, true);
 
 
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_cd5204f9.js","/")
-},{"./prefabs/characters/enemy":7,"./prefabs/characters/player":8,"1YiZ5S":14,"buffer":11}],6:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-// BasePrefab is the parent prefab class from which other prefabs are defined
-// @animationConfig defines the animations for the prefab
-var BasePrefab = function (game, x, y, sprite) {
-
-    Phaser.Sprite.call(this, game, x, y, sprite);
-    this.anchor.setTo(0.5, 0.5);
-   
-    // A list of the components the prefab contains -- [configurable]
-    this.behaviours = [];
-
-    // A list of methods to be called for each update call -- [configurable]
-    this.updateMethods = [];
-
-};
-
-BasePrefab.prototype = Object.create(Phaser.Sprite.prototype);
-BasePrefab.prototype.constructor = BasePrefab;
-
-BasePrefab.prototype.update = function () {
-	
-};
-
-BasePrefab.prototype.addBehaviour = function (behaviourObject) {
-	// Add the behaviourObject to the list of behaviours
-	this.behaviours.push(behaviourObject.name);
-
-	// Add behaviour attributes to the prefab's state
-	this[behaviourObject.name] = behaviourObject.attribs;
-
-    // Add behaviour methods to the prefab
-    for (var methodIdx in behaviourObject.methods) {
-    	var method = behaviourObject.methods[methodIdx];
-    	this[methodIdx] = method.bind(this);
-    }
-
-};
-
-module.exports = BasePrefab;
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/base/base.js","/prefabs/base")
-},{"1YiZ5S":14,"buffer":11}],7:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-// The Enemy object extends the BasePrefab object
-var BasePrefab = require('./../base/base');
-
-// Behaviours the Player prefab will possess.
-// The Enemy will be able to detect objects within a range
-var lineOfSight = require('./../../behaviours/intelligence/lineOfSight');
-// The Enemy will be able to follow an object
-var follow = require('./../../behaviours/movement/follow');
-
-var Enemy = function (game, x, y) {
-	// Call super class constructor
-    BasePrefab.call(this, game, x, y, 'enemy');
-    this.game.physics.arcade.enable(this);
-    this.anchor.setTo(0.5, 0.5);
-
-    this.addBehaviour(lineOfSight);
-
-    this.addBehaviour(follow);
-
-    this.health = 100;
-
-};
-
-Enemy.prototype = Object.create(BasePrefab.prototype);
-Enemy.prototype.constructor = Enemy;
-
-Enemy.prototype.update = function () {
-    // Line of sight behaviour
-    this.lineOfSightMoveCone();
-
-    // Follow behaviour
-    if (this.lineOfSightCanSeeTarget()) {
-        this.followSetTarget(this.lineOfSight.target);
-        this.followSetFollowingState();
-        this.followFollowTarget();
-        
-    } else {
-        this.followStop();
-        this.body.velocity.x = 0;
-        this.body.velocity.y = 0;
-    }
-
-    
-};
-
-module.exports = Enemy;
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/characters/enemy.js","/prefabs/characters")
-},{"./../../behaviours/intelligence/lineOfSight":2,"./../../behaviours/movement/follow":4,"./../base/base":6,"1YiZ5S":14,"buffer":11}],8:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-// The Player object extends the BasePrefab object
-var BasePrefab = require('./../base/base');
-
-// The Player carries an MPGun (Metal Piercing)
-var MPGun = require('./../equipment/mpGun.js');
-
-// Behaviours the Player prefab will possess.
-// The Player will be controlled with the keyboard
-var eightDirection = require('./../../behaviours/controls/eightDirection');
-
-var Player = function (game, x, y) {
-	// Call super class constructor
-    BasePrefab.call(this, game, x, y, 'player');
-    this.game.physics.arcade.enable(this);
-
-    this.addBehaviour(eightDirection);
-    this.eightDirectionInit();
-
-    this.gun = new MPGun(this.game, this.x, this.y);
-    this.game.add.existing(this.gun);
-    this.gun.player = this;
-
-    this.health = 100;
-    this.power = 1000;
-
-};
-
-Player.prototype = Object.create(BasePrefab.prototype);
-Player.prototype.constructor = Player;
-
-Player.prototype.update = function () {
-    this.rotation = this.game.physics.arcade.angleToPointer(this);
-};
-
-module.exports = Player;
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/characters/player.js","/prefabs/characters")
-},{"./../../behaviours/controls/eightDirection":1,"./../base/base":6,"./../equipment/mpGun.js":9,"1YiZ5S":14,"buffer":11}],9:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-// The Player object extends the BasePrefab object
-var BasePrefab = require('./../base/base');
-// The bullet the gun uses
-var MPBullet = require('./../projectiles/mpBullet');
-
-var MPGun = function (game, x, y) {
-	// Call super class constructor
-    BasePrefab.call(this, game, x, y, 'bigBullet');
-
-    this.player = null;
-
-    this.bulletPool = null;
-    this.lastBulletShotAt = 0;
-    this.shotDelay = 250;
-    this.ammoCount = 50;
-    this.powerPerShot = 1;
-    this.bulletType = MPBullet;
-
-    this.createBulletPool();
-
-};
-
-MPGun.prototype = Object.create(BasePrefab.prototype);
-MPGun.prototype.constructor = MPGun;
-
-MPGun.prototype.update = function () {
-	this.x = this.player.x;
-	this.y = this.player.y;
-
-	this.rotation = this.player.rotation;
-};
-
-MPGun.prototype.shoot = function () {
-    if (this.lastBulletShotAt === undefined) {
-        this.lastBulletShotAt = 0;
-    }
-    if (this.game.time.now - this.lastBulletShotAt < this.shotDelay) {
-        return;
-    }
-    this.lastBulletShotAt = this.game.time.now;
-
-    if (this.player.power < this.powerPerShot) {
-    	return;
-    }
-    
-    // Get a dead bullet from the pool.
-    var bullet = this.bulletPool.getFirstDead();
-
-    // If there aren't any bullets available then don't shoot
-    if (bullet === null || bullet === undefined) {
-        return;
-    }
-    
-    // Revive the bullet; make it alive.
-    bullet.revive();
-    bullet.bulletSetEnabled(this.x + this.width, this.y + this.height/2, this.angle);
-
-    this.player.power -= this.powerPerShot;
-};
-
-MPGun.prototype.createBulletPool = function () {
-    var Bullet = this.bulletType;
-    this.bulletPool = this.game.add.group();
-
-    for (var i = 0; i < this.ammoCount; i++) {
-        var bullet = new Bullet(this.game, 0, 0);
-        this.bulletPool.add(bullet);
-        bullet.anchor.setTo(0.5, 0.5);
-        bullet.kill();
-    }
-};
-
-module.exports = MPGun;
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/equipment/mpGun.js","/prefabs/equipment")
-},{"./../base/base":6,"./../projectiles/mpBullet":10,"1YiZ5S":14,"buffer":11}],10:[function(require,module,exports){
-(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
-'use strict';
-
-// The MPBullet object extends the BasePrefab object
-var BasePrefab = require('./../base/base');
-
-// Behaviours the MPBullet prefab will possess.
-// The MPBullet will move with a specified velocity
-var bullet = require('./../../behaviours/movement/bullet');
-
-var MPBullet = function (game, x, y) {
-	// Call super class constructor
-    BasePrefab.call(this, game, x, y, 'smallBullet');
-
-    this.addBehaviour(bullet);
-    this.bulletInit();
-
-    this.damage = 50;
-
-};
-
-MPBullet.prototype = Object.create(BasePrefab.prototype);
-MPBullet.prototype.constructor = MPBullet;
-
-MPBullet.prototype.update = function () {
-
-};
-
-module.exports = MPBullet;
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/projectiles/mpBullet.js","/prefabs/projectiles")
-},{"./../../behaviours/movement/bullet":3,"./../base/base":6,"1YiZ5S":14,"buffer":11}],11:[function(require,module,exports){
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_fcdb88dc.js","/")
+},{"1YiZ5S":5,"buffer":2}],2:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 /*!
  * The buffer module from node.js, for the browser.
@@ -1784,7 +1349,7 @@ function assert (test, message) {
 }
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/index.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer")
-},{"1YiZ5S":14,"base64-js":12,"buffer":11,"ieee754":13}],12:[function(require,module,exports){
+},{"1YiZ5S":5,"base64-js":3,"buffer":2,"ieee754":4}],3:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -1908,7 +1473,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/base64-js/lib/b64.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/base64-js/lib")
-},{"1YiZ5S":14,"buffer":11}],13:[function(require,module,exports){
+},{"1YiZ5S":5,"buffer":2}],4:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
@@ -1996,7 +1561,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
 };
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/ieee754/index.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/ieee754")
-},{"1YiZ5S":14,"buffer":11}],14:[function(require,module,exports){
+},{"1YiZ5S":5,"buffer":2}],5:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 // shim for using process in browser
 
@@ -2063,4 +1628,4 @@ process.chdir = function (dir) {
 };
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/process/browser.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/process")
-},{"1YiZ5S":14,"buffer":11}]},{},[5])
+},{"1YiZ5S":5,"buffer":2}]},{},[1])
