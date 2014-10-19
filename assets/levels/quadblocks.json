@@ -1,0 +1,39 @@
+{ "height":10,
+ "layers":[
+        {
+         "data":[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+         "height":10,
+         "name":"Tile Layer 1",
+         "opacity":1,
+         "type":"tilelayer",
+         "visible":true,
+         "width":6,
+         "x":0,
+         "y":0
+        }],
+ "orientation":"orthogonal",
+ "properties":
+    {
+
+    },
+ "tileheight":48,
+ "tilesets":[
+        {
+         "firstgid":1,
+         "image":"..\/tilesets\/gemTileset.png",
+         "imageheight":48,
+         "imagewidth":192,
+         "margin":0,
+         "name":"gemTileset",
+         "properties":
+            {
+
+            },
+         "spacing":0,
+         "tileheight":48,
+         "tilewidth":48
+        }],
+ "tilewidth":48,
+ "version":1,
+ "width":6
+}

@@ -34,6 +34,8 @@ var paths = {
         './assets/tilesets/*.png',
         './assets/particles/*.png'
     ],
+    levels: ['./assets/levels/*.json'
+    ],
     html: ['*.html'],
     vendor: {
         js: ['./vendor/*.js']
@@ -104,6 +106,11 @@ gulp.task('tilesets', function() {
         .pipe(gulp.dest('dist/assets/tilesets/'));
 });
 
+gulp.task('levels', function() {
+    return gulp.src(paths.levels)
+        .pipe(gulp.dest('dist/assets/levels/'));
+});
+
 // Optimize particle images -- CLEARED!
 gulp.task('particles', function() {
     return gulp.src(paths.images[3])
@@ -124,6 +131,7 @@ gulp.task('serve:dist', ['serve'], function () {
     gulp.watch(paths.images[1], ['images', reload]);
     gulp.watch(paths.images[2], ['tilesets', reload]);
     gulp.watch(paths.images[3], ['particles', reload]);
+    gulp.watch(paths.levels, ['levels', reload]);
 });
 
 // Run 'gulp deploy' to push changes to the gh-pages branch
@@ -132,6 +140,6 @@ gulp.task('deploy', function() {
         .pipe(deploy(options));
 });
 
-gulp.task('build', ['clean', 'vendor', 'tilesets', 'spritesheets', 'images', 'particles', 'html']);
+gulp.task('build', ['clean', 'vendor', 'tilesets', 'spritesheets', 'images', 'levels', 'particles', 'html']);
 gulp.task('default', ['build']);
 

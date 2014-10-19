@@ -1,154 +1,234 @@
 'use strict';
 
-var Player = require('./prefabs/characters/player');
-var Enemy = require('./prefabs/characters/enemy');
+//var Tile = require('./prefabs/characters/tile');
 
+/* Initialize state variables */
 var GameState = function(game) {
-
+    //this.tileWidth = 48;
+    this.selectedTile = null; /* a pointer to the tile that has been clicked */
+    this.allowInput = true; /* Disable input while gems are dropping */
+    this.minMatch = 3; /* The minimum number of tiles of the same colour that would be considered a match. */
 };
 
-//Load images and sounds
+
+/* Load images and sounds */
 GameState.prototype.preload = function() {
-    this.game.load.spritesheet('smallBullet', '/assets/spritesheets/bullet.png', 8, 8);
-    this.game.load.spritesheet('bigBullet', '/assets/spritesheets/bigBullet.png', 16, 16);
-    this.game.load.spritesheet('player', '/assets/spritesheets/player.png', 48, 48);
-    this.game.load.spritesheet('enemy', '/assets/spritesheets/enemy.png', 64, 64);
-    this.game.load.image('enemyParticle', '/assets/spritesheets/enemyParticle.png');
-    this.game.load.image('radar', '/assets/spritesheets/radar.png');
+	/* Set the background to white */
+	this.game.stage.backgroundColor = 0xffffff;
+
+	//this.load.spritesheet('tileFaces', './assets/tilesets/gemTileset.png', 48, 48, 4);
+
+	/* Load the tilemap and the tileset */
+    this.load.tilemap('board', './assets/levels/quadblocks.json', null, Phaser.Tilemap.TILED_JSON);
+    this.load.image('gemTileset', './assets/tilesets/gemTileset.png');
 };
 
-// Setup the example
+/* Create game objects */
 GameState.prototype.create = function() {
-    this.game.physics.startSystem(Phaser.Physics.ARCADE);
-    // Set stage background color
-    this.game.stage.backgroundColor = 0x4488cc;
+    //this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    this.player = new Player(this.game, 50, this.game.height/2);
-    this.game.add.existing(this.player);
+    /* Create the map */
+    this.map = this.game.add.tilemap('board');
+    this.map.addTilesetImage('gemTileset');
+    this.layer = this.map.createLayer('Tile Layer 1');
+    this.layer.resizeWorld();
 
-    this.player.body.collideWorldBounds = true;
+    /* Shuffle the tiles. The tiles are initially arranged in order */
+    this.map.shuffle(0, 0, 6, 10, this.layer);
 
-    this.enemies = this.game.add.group();
-    this.enemies.x = this.game.width/2;
-    this.enemies.y = this.game.height/2;
-
-    var enemyOne = new Enemy(this.game, 0, 0);
-    this.game.add.existing(enemyOne);
-    this.enemies.add(enemyOne);
-    this.enemies.forEach(function (enemy) {
-        console.log(enemy);
-        enemy.lineOfSightRegisterTarget(this.player);
-        enemy.lineOfSightInit();
-    }, this);
-    
-
-    // Simulate a pointer click/tap input at the center of the stage when the example begins running
-    this.game.input.activePointer.x = this.game.width/2;
-    this.game.input.activePointer.y = this.game.height/2;
-
-    // Capture certain keys to prevent their default actions in the browser.
-    // This is only necessary because this is an HTML5 game. Games on other
-    // platforms may not need code like this.
-    this.game.input.keyboard.addKeyCapture([
-        Phaser.Keyboard.A,
-        Phaser.Keyboard.D,
-        Phaser.Keyboard.W,
-        Phaser.Keyboard.S
-    ]);
-
-    // Show FPS
-    this.game.time.advancedTiming = true;
-    this.fpsText = this.game.add.text(
-        20, 20, '', { font: '16px Arial', fill: '#ffffff' }
-    );
-
+    /* Add a mouse input listener to the state.*/
+    this.game.input.onDown.add(this.getTile, this);
 };
 
-// The update() method is called every frame
+
 GameState.prototype.update = function() {
-    this.game.physics.arcade.overlap(this.player.gun.bulletPool, this.enemies, this.hitEnemy, null, this);
+    
 
-    if (this.game.time.fps !== 0) {
-        this.fpsText.setText(this.game.time.fps + ' FPS');
-    }
+};
 
-    if (this.leftInputIsActive()) {
-        // If the LEFT key is down, set the player velocity to move left
-        this.player.eightDirectionKeySignalListener({direction: {x: -1, y: 0}});
-    } else if (this.rightInputIsActive()) {
-        // If the RIGHT key is down, set the player velocity to move right
-        this.player.eightDirectionKeySignalListener({direction: {x: 1, y: 0}});
+/**
+ * Select a tile or move the selected tile.
+ * @return { null }
+ */
+GameState.prototype.getTile = function () {
+	/* Convert the mouse coordinated to tilemap coordinates */
+	var x = this.layer.getTileX(this.game.input.activePointer.x);
+	var y = this.layer.getTileY(this.game.input.activePointer.y);
+
+	if (x === undefined || y === undefined) {
+		return;
+	}
+
+    /* Get the tile at the specified coordinates */
+	var tile = this.map.getTile(x, y, this.layer);
+
+    /* Make the tile the selected tile if there's no selected tile. */
+    if (!this.selectedTile) {
+    	this.selectedTile = tile;
     } else {
-        // Stop the player from moving horizontally
-        this.player.body.velocity.x = 0;
+    	//debugger;
+    	var selected = this.selectedTile;
+
+        /* Determine if the tile can be moved to the clicked position. */
+    	if (this.checkTileMove(selected, tile)) {
+    		if (this.checkMatches(selected, tile) || this.checkMatches(tile, selected)) {
+    			this.swapTiles(selected, tile);
+
+		    	this.selectedTile = null;
+    		} else {
+    			return;
+    		}
+            
+    	} else {
+            return;
+    	}
+    }
+};
+
+
+/**
+ * Determine if a tile can be moved to the point clicked.
+ * Returns true if the tile can be moved to the destination.
+ * @param {Tile} selTile the previously selected tile
+ * @param {Tile} destTile the current tile that was clicked on
+ * @return { null } 
+ */
+GameState.prototype.checkTileMove = function (selTile, destTile) {
+	// if the destination tile is two 'blocks' or more to the right
+    if (destTile.x > selTile.x + 1 ||
+        destTile.x < selTile.x - 1 || 
+        destTile.y > selTile.y + 1 ||
+        destTile.y < selTile.y - 1 ) {
+    	return false;
     }
 
-    if (this.upInputIsActive()) {
-        // If the LEFT key is down, set the player velocity to move left
-        this.player.eightDirectionKeySignalListener({direction: {x: 0, y: -1}});
-    } else if (this.downInputIsActive()) {
-        // If the RIGHT key is down, set the player velocity to move right
-        this.player.eightDirectionKeySignalListener({direction: {x: 0, y: 1}});
-    } else {
-        // Stop the player from moving horizontally
-        this.player.body.velocity.y = 0;
+    return true;
+};
+
+
+/**
+ * Swap two tiles.
+ * @param  {Tile} selTile  The previously selected tile.
+ * @param  {Tile} destTile The current tile that was clicked on.
+ * @return {null}          
+ */
+GameState.prototype.swapTiles = function (selTile, destTile) {
+	this.map.removeTile(selTile.x, selTile.y, this.layer);
+	this.map.putTile(destTile, selTile.x, selTile.y, this.layer);
+	this.map.removeTile(destTile.x, destTile.y, this.layer);
+	this.map.putTile(selTile, destTile.x, destTile.y, this.layer);
+
+    //var movedTile = this.map.getTile(destTile.x, destTile.y, this.layer);
+	this.clearTiles(selTile, destTile);
+};
+
+
+GameState.prototype.checkMatches = function (selTile, destTile) {
+	var countUp = this.countSameTiles(destTile, 0, -1, selTile.index);
+	var countDown = this.countSameTiles(destTile, 0, 1, selTile.index);
+	var countLeft = this.countSameTiles(destTile, -1, 0, selTile.index);
+	var countRight = this.countSameTiles(destTile, 1, 0, selTile.index);
+	
+    var countHoriz = countLeft + countRight + 1;
+    var countVertical = countUp + countDown + 1;
+
+    if (countHoriz >= this.minMatch || countVertical >= this.minMatch) {
+    	return true;
     }
 
-    if (this.game.input.activePointer.isDown) {
-        this.player.gun.shoot();
+    return false;
+};
+
+
+GameState.prototype.countSameTiles = function (startTile, moveX, moveY, idx) {
+    var curX = startTile.x + moveX;
+	var curY = startTile.y + moveY;
+	var count = 0;
+	var currentTile = this.map.getTile(curX, curY, this.layer);
+	while (currentTile && currentTile.index === idx) {
+		count++;
+		curX += moveX;
+		curY += moveY;
+		currentTile = this.map.getTile(curX, curY, this.layer);
+	}
+	return count;
+};
+
+
+GameState.prototype.clearTiles = function (selTile, destTile) {
+    var countUp = this.countSameTiles(destTile, 0, -1, selTile.index);
+	var countDown = this.countSameTiles(destTile, 0, 1, selTile.index);
+	var countLeft = this.countSameTiles(destTile, -1, 0, selTile.index);
+	var countRight = this.countSameTiles(destTile, 1, 0, selTile.index);
+	
+    var countHoriz = countLeft + countRight + 1;
+    var countVertical = countUp + countDown + 1;
+    var startHoriz = destTile.x - countLeft;
+    var endHoriz = destTile.x + countRight;
+    var startVertical = destTile.y - countUp;
+    var endVertical = destTile.y + countDown;
+
+    if (countHoriz >= this.minMatch) {
+    	for (var i = startHoriz; i <= endHoriz; i++) {
+    		this.map.removeTile(i, destTile.y, this.layer);
+    	}
+    }
+    if (countVertical >= this.minMatch) {
+    	for (var j = startVertical; j <= endVertical; j++) {
+    		this.map.removeTile(destTile.x, j, this.layer);
+    	}
     }
 
+    var dropDuration = this.dropGems();
+    this.game.time.events.add(dropDuration * 100, this.refillBoard, this);
 };
 
-// This function should return true when the player activates the "go left" control
-// In this case, either holding the right arrow or tapping or clicking on the left
-// side of the screen.
-GameState.prototype.leftInputIsActive = function() {
-    var isActive = false;
 
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.A);
-    
-    return isActive;
+/**
+ * Look for gems with empty spaces beneath them and drop them.
+ * @return { null }
+ */
+GameState.prototype.dropGems = function () {
+    var dropRowCountMax = 0;
+    for (var i = 0; i < 6; i++) {
+    	var dropRowCount = 0;
+    	for (var j = 9; j >= 0; j--) {
+    		var tile = this.map.getTile(i, j, this.layer);
+    		if (tile === null) {
+    			dropRowCount++;
+    		} else if (dropRowCount > 0) {
+    			this.map.putTile(tile, i, j + dropRowCount, this.layer);
+    			this.map.removeTile(i, j, this.layer);
+    		}
+    	}
+    	dropRowCountMax = Math.max(dropRowCountMax, dropRowCount);
+    }
+    return dropRowCountMax;
 };
 
-// This function should return true when the player activates the "go right" control
-// In this case, either holding the right arrow or tapping or clicking on the right
-// side of the screen.
-GameState.prototype.rightInputIsActive = function() {
-    var isActive = false;
 
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.D);
-    
-    return isActive;
+GameState.prototype.refillBoard = function () {
+    var maxMissTiles = 0;
+    for (var i = 0; i < 6; i++) {
+    	var missTiles = 0;
+    	for (var j = 9; j >= 0; j--) {
+    		var tile = this.map.getTile(i, j, this.layer);
+    		if (tile === null) {
+    			missTiles++;
+    			var newTile = this.map.getTile(Math.floor(Math.random() * 6), 9, this.layer);
+    			this.map.putTile(newTile, i, j, this.layer);
+    		}
+    	}
+    	maxMissTiles = Math.max(missTiles, maxMissTiles);
+    }
+    game.time.events.add(maxMissTiles * 2 * 500, this.boardRefilled, this);
 };
 
-// This function should return true when the player activates the "go left" control
-// In this case, either holding the right arrow or tapping or clicking on the left
-// side of the screen.
-GameState.prototype.upInputIsActive = function() {
-    var isActive = false;
-
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.W);
-    
-    return isActive;
+GameState.prototype.boardRefilled = function () {
+	this.allowInput = true;
 };
 
-// This function should return true when the player activates the "go left" control
-// In this case, either holding the right arrow or tapping or clicking on the left
-// side of the screen.
-GameState.prototype.downInputIsActive = function() {
-    var isActive = false;
 
-    isActive = this.input.keyboard.isDown(Phaser.Keyboard.S);
-    
-    return isActive;
-};
-
-GameState.prototype.hitEnemy = function (bullet, enemy) {
-    enemy.damage(bullet.damage);
-    bullet.kill();
-};
-
-var game = new Phaser.Game(848, 450, Phaser.AUTO, 'game');
+var game = new Phaser.Game(288, 480, Phaser.AUTO, 'game');
 game.state.add('game', GameState, true);
 
