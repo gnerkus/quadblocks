@@ -8,8 +8,6 @@ var MatchThreeBoard = function (game, columns, rows, top, left, spritesheet, par
     this.setTileSheet(spritesheet);
     this.setTileClass(MatchThreeTile);
 
-    //this.tileWidth = 48;
-	//this.tileHeight = 48;
 	this.typeCount = 4;
 };
 

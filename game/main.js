@@ -23,7 +23,7 @@ GameState.prototype.create = function() {
     //this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.board = new MatchThreeBoard(this.game, 6, 10, 0, 0, 'tileFaces');
     console.log(this.board);
-    this.board.fill(0, 0, 5, 9);
+    this.board.fill(0, 0, 6, 10);
     //this.board.shuffle(0, 0, 6, 10);
 
     /* Add a mouse input listener to the state.*/

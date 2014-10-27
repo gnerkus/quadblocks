@@ -24,7 +24,7 @@ Board.prototype.setTileClass = function (tileClass) {
 	this.tileClass = tileClass;
 	this.tileWidth = this.tileClass.tileWidth;
 	this.tileHeight = this.tileClass.tileHeight;
-	//this.typeCount = this.tileClass.tileTypeCount;
+	this.typeCount = this.tileClass.tileTypeCount;
 };
 
 Board.prototype.setTileSheet = function (sheet) {
@@ -49,8 +49,8 @@ Board.prototype.fill = function (cl, rw, width, height, type) {
     var columns = !!width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
     var rows = !!height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows; 
 
-    for (var i = rw; i <= rows + rw; i++) {
-   	    for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+   	    for (var j = cl; j < columns + cl; j++) {
    	    	var tile = new this.tileClass(this.game, j * this.tileWidth, i * this.tileHeight, this.tileSheet, type || Math.floor(Math.random() * this.typeCount));
 
    	    	this.addAt(tile, i * this.numCols + j, false);
@@ -77,8 +77,8 @@ Board.prototype.forEachTile = function (callback, callbackContext, cl, rw, width
     var rows = height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows;
     var tiles = []; 
 
-    for (var i = rw; i <= rows + rw; i++) {
-    	for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+    	for (var j = cl; j < columns + cl; j++) {
             tiles[0] = this.getAt(i * this.numCols + j);
             callback.apply(callbackContext, tiles);
     	}
@@ -239,8 +239,8 @@ Board.prototype.replaceTiles = function (srcType, destType, cl, rw, width, heigh
     var columns = width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
     var rows = height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows;
 
-    for (var i = rw; i <= rows + rw; i++) {
-    	for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+    	for (var j = cl; j < columns + cl; j++) {
             var tile = this.getAt(i * this.numCols + j);
 
             if (tile.getType() === srcType) {
@@ -282,8 +282,8 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     var indexes = [];
 
-    for (var i = rw; i <= rows + rw; i++) {
-    	for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+    	for (var j = cl; j < columns + cl; j++) {
             var tile = this.getAt(i * this.numCols + j);
             indexes.push(tile.getType());
     	}
@@ -291,8 +291,8 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     Phaser.Utils.shuffle(indexes);
 
-    for (var s = rw; s <= rows + rw; s++) {
-    	for (var t = cl; t <= columns + cl; t++) {
+    for (var s = rw; s < rows + rw; s++) {
+    	for (var t = cl; t < columns + cl; t++) {
             var newTile = this.getAt(s * this.numCols + t);
             var type = indexes.pop();
             newTile.setType(type);

@@ -23,6 +23,6 @@ MatchThreeTile.prototype.update = function () {
 MatchThreeTile.tileWidth = 48;
 MatchThreeTile.tileHeight = 48;
 MatchThreeTile.prototype.animNames = ['star', 'heart', 'cross', 'diamond'];
-//MatchThreeTile.prototype.tileTypeCount = MatchThreeTile.prototype.animNames.length;
+MatchThreeTile.tileTypeCount = MatchThreeTile.prototype.animNames.length;
 
 module.exports = MatchThreeTile;
