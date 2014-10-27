@@ -25,7 +25,7 @@ GameState.prototype.create = function() {
     //this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.board = new MatchThreeBoard(this.game, 6, 10, 0, 0, 'tileFaces');
     console.log(this.board);
-    this.board.fill(0, 0, 5, 9);
+    this.board.fill(0, 0, 6, 10);
     //this.board.shuffle(0, 0, 6, 10);
 
     /* Add a mouse input listener to the state.*/
@@ -225,7 +225,7 @@ var game = new Phaser.Game(288, 480, Phaser.AUTO, 'game');
 game.state.add('game', GameState, true);
 
 
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_7e6b2b79.js","/")
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_162ab359.js","/")
 },{"./prefabs/environment/matchThreeBoard":5,"1YiZ5S":9,"buffer":6}],2:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 'use strict';
@@ -254,7 +254,7 @@ Board.prototype.setTileClass = function (tileClass) {
 	this.tileClass = tileClass;
 	this.tileWidth = this.tileClass.tileWidth;
 	this.tileHeight = this.tileClass.tileHeight;
-	//this.typeCount = this.tileClass.tileTypeCount;
+	this.typeCount = this.tileClass.tileTypeCount;
 };
 
 Board.prototype.setTileSheet = function (sheet) {
@@ -279,8 +279,8 @@ Board.prototype.fill = function (cl, rw, width, height, type) {
     var columns = !!width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
     var rows = !!height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows; 
 
-    for (var i = rw; i <= rows + rw; i++) {
-   	    for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+   	    for (var j = cl; j < columns + cl; j++) {
    	    	var tile = new this.tileClass(this.game, j * this.tileWidth, i * this.tileHeight, this.tileSheet, type || Math.floor(Math.random() * this.typeCount));
 
    	    	this.addAt(tile, i * this.numCols + j, false);
@@ -307,8 +307,8 @@ Board.prototype.forEachTile = function (callback, callbackContext, cl, rw, width
     var rows = height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows;
     var tiles = []; 
 
-    for (var i = rw; i <= rows + rw; i++) {
-    	for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+    	for (var j = cl; j < columns + cl; j++) {
             tiles[0] = this.getAt(i * this.numCols + j);
             callback.apply(callbackContext, tiles);
     	}
@@ -469,8 +469,8 @@ Board.prototype.replaceTiles = function (srcType, destType, cl, rw, width, heigh
     var columns = width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
     var rows = height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows;
 
-    for (var i = rw; i <= rows + rw; i++) {
-    	for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+    	for (var j = cl; j < columns + cl; j++) {
             var tile = this.getAt(i * this.numCols + j);
 
             if (tile.getType() === srcType) {
@@ -512,8 +512,8 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     var indexes = [];
 
-    for (var i = rw; i <= rows + rw; i++) {
-    	for (var j = cl; j <= columns + cl; j++) {
+    for (var i = rw; i < rows + rw; i++) {
+    	for (var j = cl; j < columns + cl; j++) {
             var tile = this.getAt(i * this.numCols + j);
             indexes.push(tile.getType());
     	}
@@ -521,8 +521,8 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     Phaser.Utils.shuffle(indexes);
 
-    for (var s = rw; s <= rows + rw; s++) {
-    	for (var t = cl; t <= columns + cl; t++) {
+    for (var s = rw; s < rows + rw; s++) {
+    	for (var t = cl; t < columns + cl; t++) {
             var newTile = this.getAt(s * this.numCols + t);
             var type = indexes.pop();
             newTile.setType(type);
@@ -608,7 +608,7 @@ MatchThreeTile.prototype.update = function () {
 MatchThreeTile.tileWidth = 48;
 MatchThreeTile.tileHeight = 48;
 MatchThreeTile.prototype.animNames = ['star', 'heart', 'cross', 'diamond'];
-//MatchThreeTile.prototype.tileTypeCount = MatchThreeTile.prototype.animNames.length;
+MatchThreeTile.tileTypeCount = MatchThreeTile.prototype.animNames.length;
 
 module.exports = MatchThreeTile;
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/characters/matchThreeTile.js","/prefabs/characters")
@@ -624,8 +624,6 @@ var MatchThreeBoard = function (game, columns, rows, top, left, spritesheet, par
     this.setTileSheet(spritesheet);
     this.setTileClass(MatchThreeTile);
 
-    //this.tileWidth = 48;
-	//this.tileHeight = 48;
 	this.typeCount = 4;
 };
 
