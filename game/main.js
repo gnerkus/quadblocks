@@ -1,13 +1,12 @@
 'use strict';
 
-//var Tile = require('./prefabs/characters/tile');
+var MatchThreeBoard = require('./prefabs/environment/matchThreeBoard');
 
 /* Initialize state variables */
 var GameState = function(game) {
-    //this.tileWidth = 48;
-    this.selectedTile = null; /* a pointer to the tile that has been clicked */
-    this.allowInput = true; /* Disable input while gems are dropping */
-    this.minMatch = 3; /* The minimum number of tiles of the same colour that would be considered a match. */
+    //this.selectedTile = null; /* a pointer to the tile that has been clicked */
+    //this.allowInput = true; /* Disable input while gems are dropping */
+    //this.minMatch = 3; /* The minimum number of tiles of the same colour that would be considered a match. */
 };
 
 
@@ -16,28 +15,19 @@ GameState.prototype.preload = function() {
 	/* Set the background to white */
 	this.game.stage.backgroundColor = 0xffffff;
 
-	//this.load.spritesheet('tileFaces', './assets/tilesets/gemTileset.png', 48, 48, 4);
-
-	/* Load the tilemap and the tileset */
-    this.load.tilemap('board', './assets/levels/quadblocks.json', null, Phaser.Tilemap.TILED_JSON);
-    this.load.image('gemTileset', './assets/tilesets/gemTileset.png');
+	this.load.spritesheet('tileFaces', './assets/tilesets/gemTileset.png', 48, 48, 4);
 };
 
 /* Create game objects */
 GameState.prototype.create = function() {
     //this.game.physics.startSystem(Phaser.Physics.ARCADE);
-
-    /* Create the map */
-    this.map = this.game.add.tilemap('board');
-    this.map.addTilesetImage('gemTileset');
-    this.layer = this.map.createLayer('Tile Layer 1');
-    this.layer.resizeWorld();
-
-    /* Shuffle the tiles. The tiles are initially arranged in order */
-    this.map.shuffle(0, 0, 6, 10, this.layer);
+    this.board = new MatchThreeBoard(this.game, 6, 10, 0, 0, 'tileFaces');
+    console.log(this.board);
+    this.board.fill(0, 0, 5, 9);
+    //this.board.shuffle(0, 0, 6, 10);
 
     /* Add a mouse input listener to the state.*/
-    this.game.input.onDown.add(this.getTile, this);
+    //this.game.input.onDown.add(this.getTile, this);
 };
 
 
