@@ -2,14 +2,13 @@
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 'use strict';
 
-//var Tile = require('./prefabs/characters/tile');
+var MatchThreeBoard = require('./prefabs/environment/matchThreeBoard');
 
 /* Initialize state variables */
 var GameState = function(game) {
-    //this.tileWidth = 48;
-    this.selectedTile = null; /* a pointer to the tile that has been clicked */
-    this.allowInput = true; /* Disable input while gems are dropping */
-    this.minMatch = 3; /* The minimum number of tiles of the same colour that would be considered a match. */
+    //this.selectedTile = null; /* a pointer to the tile that has been clicked */
+    //this.allowInput = true; /* Disable input while gems are dropping */
+    //this.minMatch = 3; /* The minimum number of tiles of the same colour that would be considered a match. */
 };
 
 
@@ -18,28 +17,19 @@ GameState.prototype.preload = function() {
 	/* Set the background to white */
 	this.game.stage.backgroundColor = 0xffffff;
 
-	//this.load.spritesheet('tileFaces', './assets/tilesets/gemTileset.png', 48, 48, 4);
-
-	/* Load the tilemap and the tileset */
-    this.load.tilemap('board', './assets/levels/quadblocks.json', null, Phaser.Tilemap.TILED_JSON);
-    this.load.image('gemTileset', './assets/tilesets/gemTileset.png');
+	this.load.spritesheet('tileFaces', './assets/tilesets/gemTileset.png', 48, 48, 4);
 };
 
 /* Create game objects */
 GameState.prototype.create = function() {
     //this.game.physics.startSystem(Phaser.Physics.ARCADE);
-
-    /* Create the map */
-    this.map = this.game.add.tilemap('board');
-    this.map.addTilesetImage('gemTileset');
-    this.layer = this.map.createLayer('Tile Layer 1');
-    this.layer.resizeWorld();
-
-    /* Shuffle the tiles. The tiles are initially arranged in order */
-    this.map.shuffle(0, 0, 6, 10, this.layer);
+    this.board = new MatchThreeBoard(this.game, 6, 10, 0, 0, 'tileFaces');
+    console.log(this.board);
+    this.board.fill(0, 0, 5, 9);
+    //this.board.shuffle(0, 0, 6, 10);
 
     /* Add a mouse input listener to the state.*/
-    this.game.input.onDown.add(this.getTile, this);
+    //this.game.input.onDown.add(this.getTile, this);
 };
 
 
@@ -235,8 +225,420 @@ var game = new Phaser.Game(288, 480, Phaser.AUTO, 'game');
 game.state.add('game', GameState, true);
 
 
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_fcdb88dc.js","/")
-},{"1YiZ5S":5,"buffer":2}],2:[function(require,module,exports){
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_7e6b2b79.js","/")
+},{"./prefabs/environment/matchThreeBoard":5,"1YiZ5S":9,"buffer":6}],2:[function(require,module,exports){
+(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
+'use strict';
+
+// This class represents a game board filled with tiles.
+
+
+var Board = function (game, columns, rows, top, left, parent) {
+	Phaser.Group.call(this, game, parent);
+	this.leftOffset = left;
+	this.topOffset = top;
+	this.x = this.leftOffset;
+	this.y = this.topOffset;
+	this.numRows = rows;
+	this.numCols = columns;
+};
+
+Board.prototype = Object.create(Phaser.Group.prototype);
+Board.prototype.constructor = Board;
+
+Board.prototype.update = function () {
+
+};
+
+Board.prototype.setTileClass = function (tileClass) {
+	this.tileClass = tileClass;
+	this.tileWidth = this.tileClass.tileWidth;
+	this.tileHeight = this.tileClass.tileHeight;
+	//this.typeCount = this.tileClass.tileTypeCount;
+};
+
+Board.prototype.setTileSheet = function (sheet) {
+	this.tileSheet = sheet;
+};
+
+
+/**
+ * Fill an area of the board with Tiles.
+ * @param  {Number} cl     The leftmost column of the area.
+ * @param  {Number} rw     The topmost row of the area.
+ * @param  {Number} width  The width of the area in tiles.
+ * @param  {Number} height The height of the area in tiles.
+ * @param  {Number} type The tileType for each Tile.
+ * @return {null}        
+ */
+Board.prototype.fill = function (cl, rw, width, height, type) {
+	if (!(cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows)) {
+    	return false;
+    }
+
+    var columns = !!width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
+    var rows = !!height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows; 
+
+    for (var i = rw; i <= rows + rw; i++) {
+   	    for (var j = cl; j <= columns + cl; j++) {
+   	    	var tile = new this.tileClass(this.game, j * this.tileWidth, i * this.tileHeight, this.tileSheet, type || Math.floor(Math.random() * this.typeCount));
+
+   	    	this.addAt(tile, i * this.numCols + j, false);
+   	    }
+    }
+};
+
+/**
+ * Call a function for each Tile in a specified area.
+ * @param  {Function} callback        The function to be called. The function should be available for each Tile.
+ * @param  {Object}   callbackContext The context under which the function is called.
+ * @param  {Number}   cl              The leftmost column of the area.
+ * @param  {Number}   rw              The topmost row of the area.
+ * @param  {Number}   width           The width of the area in tiles.
+ * @param  {Number}   height          The height of the area in tiles.
+ * @return {null}                   
+ */
+Board.prototype.forEachTile = function (callback, callbackContext, cl, rw, width, height) {
+	if (!(cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows)) {
+    	return false;
+    }
+
+    var columns = width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
+    var rows = height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows;
+    var tiles = []; 
+
+    for (var i = rw; i <= rows + rw; i++) {
+    	for (var j = cl; j <= columns + cl; j++) {
+            tiles[0] = this.getAt(i * this.numCols + j);
+            callback.apply(callbackContext, tiles);
+    	}
+    }
+
+};
+
+/**
+ * Get the tile at the coordinates given.
+ * @param  {Number} cl The column to get the tile from.
+ * @param  {Number} rw The row the get the tile from.
+ * @return {Board.tileClass}      The Tile at the given coordinates or null if not found.
+ */
+Board.prototype.getTile = function (cl, rw) {
+    if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
+    	return this.getAt(rw * this.numCols + cl);
+    } else {
+    	return null;
+    }
+};
+
+/**
+ * Get the tile above the coordinates given.
+ * @param  {Number} cl The column to get the tile from.
+ * @param  {Number} rw The row the get the tile from.
+ * @return {Board.tileClass}      The Tile above the given coordinates or null if not found.
+ */
+Board.prototype.getTileAbove = function (cl, rw) {
+    if (cl >= 0 && cl < this.numCols && rw > 0 && rw < this.numRows) {
+    	return this.getAt((rw - 1) * this.numCols + cl);
+    } else {
+    	return null;
+    }
+};
+
+/**
+ * Get the tile below the coordinates given.
+ * @param  {Number} cl The column to get the tile from.
+ * @param  {Number} rw The row the get the tile from.
+ * @return {Board.tileClass}      The Tile below the given coordinates or null if not found.
+ */
+Board.prototype.getTileBelow = function (cl, rw) {
+    if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows - 1) {
+    	return this.getAt((rw + 1) * this.numCols + cl);
+    } else {
+    	return null;
+    }
+};
+
+/**
+ * Get the tile to the left of the coordinates given.
+ * @param  {Number} cl The column to get the tile from.
+ * @param  {Number} rw The row the get the tile from.
+ * @return {Board.tileClass}      The Tile to the left of the given coordinates or null if not found.
+ */
+Board.prototype.getTileLeft = function (cl, rw) {
+    if (cl > 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
+    	return this.getAt(rw * this.numCols + cl - 1);
+    } else {
+    	return null;
+    }
+};
+
+/**
+ * Get the tile to the right of the coordinates given.
+ * @param  {Number} cl The column to get the tile from.
+ * @param  {Number} rw The row the get the tile from.
+ * @return {Board.tileClass}      The Tile to the right of the given coordinates or null if not found.
+ */
+Board.prototype.getTileRight = function (cl, rw) {
+    if (cl >= 0 && cl < this.numCols - 1 && rw >= 0 && rw < this.numRows) {
+    	return this.getAt(rw * this.numCols + cl + 1);
+    } else {
+    	return null;
+    }
+};
+
+/**
+ * Check if there is a tile at the given location.
+ * @param  {Number} cl The column to check for a tile.
+ * @param  {Number} rw The row to check for a tile.
+ * @return {Boolean}   True if there is a tile at the given location; otherwise false.
+ */
+Board.prototype.hasTile = function (cl, rw) {
+    if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
+    	return !!(this.getAt(rw * this.numCols + cl));
+    } else {
+    	return false;
+    }
+};
+
+/**
+ * Puts a tile of the given colour value at the position specified. If you pass 'null'
+ * as your tile, it will pass the arguments to removeTile.
+ * @param  {Board.tileClass | Number | null} tile The tile to place or the type of tile to place.
+ * @param  {Number} cl   The column to place the tile.
+ * @param  {Number} rw   The row to place the tile.
+ * @return {Board.tileClass}      The tile object that was added to the board.
+ */
+Board.prototype.putTile = function (tile, cl, rw) {
+    if (tile === null) {
+    	return this.removeTile(cl, rw);
+    }
+
+    if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
+    	if (tile instanceof this.tileClass) {
+    		if (this.hasTile(cl, rw)) {
+    			this.removeTile(cl, rw);
+    		}
+
+    		this.addAt(tile, rw * this.numCols + cl, false);
+    	} else {
+    		if (this.hasTile(cl, rw)) {
+    			this.removeTile(cl, rw);
+    		} 
+
+    		var newTile = new this.tileClass(this.game, cl * this.tileWidth, rw * this.tileHeight, this.tileSheet, +tile);
+
+    	    this.addAt(newTile, rw * this.numCols + cl, false);
+    	}
+    } else {
+    	return null;
+    }
+};
+
+/**
+ * Removes the tile at the specified coordinates.
+ * @param  {Number} cl The column to obtain the tile from.
+ * @param  {Number} rw The row to obtain the tile from.
+ * @param  {Boolean} destroy If True, call destroy on the child that was removed.
+ * @return {Board.tileClass}    The tile object that was removed from the board.
+ */
+Board.prototype.removeTile = function (cl, rw, destroy) {
+    if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
+    	var tile = this.getAt(rw * this.numCols + cl);
+    	this.remove(tile, destroy, false);
+    	return tile;
+    } else {
+    	return null;
+    }
+};
+
+/**
+ * Scans the given area for tiles with a type matching srcType and updates their type to match destType.
+ * @param  {Number} srcType  The tile type to scan for.
+ * @param  {Number} destType The tile type to replace found tiles with.
+ * @param  {Number} The leftmost column of the area.       
+ * @param  {Number} The topmost row of the area.       
+ * @param  {Number} The width of the area in tiles.    
+ * @param  {Number} The height of the area in tiles.   
+ * @return {[type]}          
+ */
+Board.prototype.replaceTiles = function (srcType, destType, cl, rw, width, height) {
+    if (!(cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows)) {
+    	return false;
+    }
+
+    var columns = width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
+    var rows = height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows;
+
+    for (var i = rw; i <= rows + rw; i++) {
+    	for (var j = cl; j <= columns + cl; j++) {
+            var tile = this.getAt(i * this.numCols + j);
+
+            if (tile.getType() === srcType) {
+            	tile.setType(destType);
+            }
+    	}
+    }
+};
+
+/**
+ * Search the entire map for the first tile matching the tileType and returns it or null.
+ * The search begins at the bottom right corner of the board.
+ * @param  {Number} tileType The tile's type.
+ * @return {[type]}          [description]
+ */
+Board.prototype.searchForTile = function (tileType) {
+    for (var i = this.numRows - 1; i >= 0; i--) {
+    	for (var j = this.numCols - 1; j >= 0; j--) {
+            var tile = this.getAt(i * this.numCols + j);
+
+            if (tile.getType() === tileType) {
+            	return tile;
+            }
+    	}
+    }
+};
+
+/**
+ * Shuffle a set of tiles in a given area.
+ * @param  {Number} cl     The leftmost column of the area.
+ * @param  {Number} rw     The topmost column of the area.
+ * @param  {Number} width  The width of the area in tiles.
+ * @param  {Number} height The height of the area in tiles.
+ * @return {[type]}        [description]
+ */
+Board.prototype.shuffle = function (cl, rw, width, height) {
+    var columns = width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
+    var rows = height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows;
+
+    var indexes = [];
+
+    for (var i = rw; i <= rows + rw; i++) {
+    	for (var j = cl; j <= columns + cl; j++) {
+            var tile = this.getAt(i * this.numCols + j);
+            indexes.push(tile.getType());
+    	}
+    }
+
+    Phaser.Utils.shuffle(indexes);
+
+    for (var s = rw; s <= rows + rw; s++) {
+    	for (var t = cl; t <= columns + cl; t++) {
+            var newTile = this.getAt(s * this.numCols + t);
+            var type = indexes.pop();
+            newTile.setType(type);
+    	}
+    }
+};
+
+/**
+ * Swaps two tiles.
+ * @param  {Board.tileClass} tileA The first tile.
+ * @param  {Board.tileClass} tileB The second tile.
+ * @return {[type]}       [description]
+ */
+Board.prototype.swap = function (tileA, tileB) {
+    if (!(tileA instanceof Board.tileClass) || !(tileB instanceof Board.tileClass)) {
+    	return false;
+    }
+
+    var tileAColumn = this.getIndex(tileA) % this.numCols;
+    var tileARow = Math.floor(this.getIndex(tileA) / this.numCols);
+    var tileBColumn = this.getIndex(tileB) % this.numCols;
+    var tileBRow = Math.floor(this.getIndex(tileB) / this.numCols);
+
+    this.removeTile(tileAColumn, tileARow, false);
+    this.removeTile(tileBColumn, tileBRow, false);
+
+    this.putTile(tileA, tileBColumn, tileBRow);
+    this.putTile(tileB, tileAColumn, tileARow);
+};
+
+module.exports = Board;
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/base/board.js","/prefabs/base")
+},{"1YiZ5S":9,"buffer":6}],3:[function(require,module,exports){
+(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
+'use strict';
+
+var Tile = function (game, x, y, key, type) {
+	Phaser.Sprite.call(this, game, x, y, key);
+	this.tileType = type;
+};
+
+Tile.prototype = Object.create(Phaser.Sprite.prototype);
+Tile.prototype.constructor = Tile;
+
+Tile.prototype.update = function () {
+
+};
+
+Tile.prototype.setType = function (type) {
+	this.tileType = type;
+};
+
+Tile.prototype.getType = function () {
+	return this.tileType;
+};
+
+module.exports = Tile;
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/base/tile.js","/prefabs/base")
+},{"1YiZ5S":9,"buffer":6}],4:[function(require,module,exports){
+(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
+'use strict';
+
+var Tile = require('./../base/tile');
+
+var MatchThreeTile = function (game, x, y, key, colour) {
+	Tile.call(this, game, x, y, key, colour);
+
+	this.animations.add(this.animNames[0], [0], 60, false);
+	this.animations.add(this.animNames[1], [1], 60, false);
+	this.animations.add(this.animNames[2], [2], 60, false);
+	this.animations.add(this.animNames[3], [3], 60, false);
+
+	this.animations.play(this.animNames[this.tileType]);
+};
+
+MatchThreeTile.prototype = Object.create(Phaser.Sprite.prototype);
+MatchThreeTile.prototype.constructor = MatchThreeTile;
+
+MatchThreeTile.prototype.update = function () {
+
+};
+
+MatchThreeTile.tileWidth = 48;
+MatchThreeTile.tileHeight = 48;
+MatchThreeTile.prototype.animNames = ['star', 'heart', 'cross', 'diamond'];
+//MatchThreeTile.prototype.tileTypeCount = MatchThreeTile.prototype.animNames.length;
+
+module.exports = MatchThreeTile;
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/characters/matchThreeTile.js","/prefabs/characters")
+},{"./../base/tile":3,"1YiZ5S":9,"buffer":6}],5:[function(require,module,exports){
+(function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
+'use strict';
+
+var Board = require('./../base/board');
+var MatchThreeTile = require('./../characters/matchThreeTile');
+
+var MatchThreeBoard = function (game, columns, rows, top, left, spritesheet, parent) {
+    Board.call(this, game, columns, rows, top, left, parent);
+    this.setTileSheet(spritesheet);
+    this.setTileClass(MatchThreeTile);
+
+    //this.tileWidth = 48;
+	//this.tileHeight = 48;
+	this.typeCount = 4;
+};
+
+MatchThreeBoard.prototype = Object.create(Board.prototype);
+MatchThreeBoard.prototype.constructor = MatchThreeBoard;
+
+MatchThreeBoard.prototype.update = function () {
+
+};
+
+module.exports = MatchThreeBoard;
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/environment/matchThreeBoard.js","/prefabs/environment")
+},{"./../base/board":2,"./../characters/matchThreeTile":4,"1YiZ5S":9,"buffer":6}],6:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 /*!
  * The buffer module from node.js, for the browser.
@@ -1349,7 +1751,7 @@ function assert (test, message) {
 }
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/index.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer")
-},{"1YiZ5S":5,"base64-js":3,"buffer":2,"ieee754":4}],3:[function(require,module,exports){
+},{"1YiZ5S":9,"base64-js":7,"buffer":6,"ieee754":8}],7:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -1473,7 +1875,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/base64-js/lib/b64.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/base64-js/lib")
-},{"1YiZ5S":5,"buffer":2}],4:[function(require,module,exports){
+},{"1YiZ5S":9,"buffer":6}],8:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
@@ -1561,7 +1963,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
 };
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/ieee754/index.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/buffer/node_modules/ieee754")
-},{"1YiZ5S":5,"buffer":2}],5:[function(require,module,exports){
+},{"1YiZ5S":9,"buffer":6}],9:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 // shim for using process in browser
 
@@ -1628,4 +2030,4 @@ process.chdir = function (dir) {
 };
 
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../node_modules/gulp-browserify/node_modules/browserify/node_modules/process/browser.js","/../node_modules/gulp-browserify/node_modules/browserify/node_modules/process")
-},{"1YiZ5S":5,"buffer":2}]},{},[1])
+},{"1YiZ5S":9,"buffer":6}]},{},[1])
