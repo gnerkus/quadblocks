@@ -11,6 +11,8 @@ var Board = function (game, columns, rows, top, left, parent) {
 	this.y = this.topOffset;
 	this.numRows = rows;
 	this.numCols = columns;
+
+    this.score = 0;
 };
 
 Board.prototype = Object.create(Phaser.Group.prototype);
@@ -45,17 +47,27 @@ Board.prototype.fill = function (cl, rw, width, height, type) {
 	if (!(cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows)) {
     	return false;
     }
-
+    
     var columns = !!width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
     var rows = !!height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows; 
 
     for (var i = rw; i < rows + rw; i++) {
    	    for (var j = cl; j < columns + cl; j++) {
    	    	var tile = new this.tileClass(this.game, j * this.tileWidth, i * this.tileHeight, this.tileSheet, type || Math.floor(Math.random() * this.typeCount));
+            tile.board = this;
+            this.setCell(tile, j, i);
 
-   	    	this.addAt(tile, i * this.numCols + j, false);
+   	    	this.add(tile);
    	    }
     }
+};
+
+// Set the Tile's position within the board.
+Board.prototype.setCell = function (tile, col, row) {
+    tile.tileColumn = col;
+    tile.tileRow = row;
+    tile.tileID = this.calculateTileID(col, row);
+    tile.setPosition();
 };
 
 /**
@@ -79,7 +91,7 @@ Board.prototype.forEachTile = function (callback, callbackContext, cl, rw, width
 
     for (var i = rw; i < rows + rw; i++) {
     	for (var j = cl; j < columns + cl; j++) {
-            tiles[0] = this.getAt(i * this.numCols + j);
+            tiles[0] = this.getTile(j, i);
             callback.apply(callbackContext, tiles);
     	}
     }
@@ -94,10 +106,38 @@ Board.prototype.forEachTile = function (callback, callbackContext, cl, rw, width
  */
 Board.prototype.getTile = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	return this.getAt(rw * this.numCols + cl);
+    	return this.iterate('tileID', this.calculateTileID(cl, rw), Phaser.Group.RETURN_CHILD);
     } else {
     	return null;
     }
+};
+
+/**
+ * Get the cell coordinates of the point clicked.
+ * @param  {Number} x The x coordinate to fetch the column position.
+ * @param  {Number} y The y coordinate to fetch the row position.
+ * @return {Object | null}   The cell coordinates, if found, or null.
+ */
+Board.prototype.getCell = function (x, y) {
+    var column = Math.floor((x - this.leftOffset) / this.tileWidth);
+    var row = Math.floor((y - this.topOffset) / this.tileHeight);
+
+    if (column >= 0 && column < this.numCols && row >= 0 && row < this.numRows) {
+        return {column: column, row: row};
+    } else {
+        return null;
+    }
+};
+
+/**
+ * Get the tile at the x-y coordinates specified.
+ * @param  {Number} x The x coordinate to fetch the tile from.
+ * @param  {Number} y The y coordinate to fetch the tile from.
+ * @return {Board.tileClass}   The Tile at the given coordinates or null if not found.
+ */
+Board.prototype.getTileXY = function (x, y) {
+    var cell = this.getCell(x, y);
+    return this.getTile(cell.column, cell.row);
 };
 
 /**
@@ -108,7 +148,7 @@ Board.prototype.getTile = function (cl, rw) {
  */
 Board.prototype.getTileAbove = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw > 0 && rw < this.numRows) {
-    	return this.getAt((rw - 1) * this.numCols + cl);
+    	return this.getTile(cl, rw - 1);
     } else {
     	return null;
     }
@@ -122,7 +162,7 @@ Board.prototype.getTileAbove = function (cl, rw) {
  */
 Board.prototype.getTileBelow = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows - 1) {
-    	return this.getAt((rw + 1) * this.numCols + cl);
+    	return this.getTile(cl, rw + 1);
     } else {
     	return null;
     }
@@ -136,7 +176,7 @@ Board.prototype.getTileBelow = function (cl, rw) {
  */
 Board.prototype.getTileLeft = function (cl, rw) {
     if (cl > 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	return this.getAt(rw * this.numCols + cl - 1);
+    	return this.getTile(cl - 1, rw);
     } else {
     	return null;
     }
@@ -150,7 +190,7 @@ Board.prototype.getTileLeft = function (cl, rw) {
  */
 Board.prototype.getTileRight = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols - 1 && rw >= 0 && rw < this.numRows) {
-    	return this.getAt(rw * this.numCols + cl + 1);
+    	return this.getTile(cl + 1, rw);
     } else {
     	return null;
     }
@@ -164,7 +204,7 @@ Board.prototype.getTileRight = function (cl, rw) {
  */
 Board.prototype.hasTile = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	return !!(this.getAt(rw * this.numCols + cl));
+    	return !!(this.getTile(cl, rw));
     } else {
     	return false;
     }
@@ -189,15 +229,20 @@ Board.prototype.putTile = function (tile, cl, rw) {
     			this.removeTile(cl, rw);
     		}
 
-    		this.addAt(tile, rw * this.numCols + cl, false);
+            tile.board = this;
+            this.setCell(tile, cl, rw);
+
+            this.add(tile);
     	} else {
     		if (this.hasTile(cl, rw)) {
     			this.removeTile(cl, rw);
     		} 
 
     		var newTile = new this.tileClass(this.game, cl * this.tileWidth, rw * this.tileHeight, this.tileSheet, +tile);
+            newTile.board = this;
+            this.setCell(newTile, cl, rw);
 
-    	    this.addAt(newTile, rw * this.numCols + cl, false);
+    	    this.add(newTile);
     	}
     } else {
     	return null;
@@ -213,7 +258,7 @@ Board.prototype.putTile = function (tile, cl, rw) {
  */
 Board.prototype.removeTile = function (cl, rw, destroy) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	var tile = this.getAt(rw * this.numCols + cl);
+    	var tile = this.getTile(cl, rw);
     	this.remove(tile, destroy, false);
     	return tile;
     } else {
@@ -241,28 +286,10 @@ Board.prototype.replaceTiles = function (srcType, destType, cl, rw, width, heigh
 
     for (var i = rw; i < rows + rw; i++) {
     	for (var j = cl; j < columns + cl; j++) {
-            var tile = this.getAt(i * this.numCols + j);
+            var tile = this.getTile(j, i);
 
             if (tile.getType() === srcType) {
             	tile.setType(destType);
-            }
-    	}
-    }
-};
-
-/**
- * Search the entire map for the first tile matching the tileType and returns it or null.
- * The search begins at the bottom right corner of the board.
- * @param  {Number} tileType The tile's type.
- * @return {[type]}          [description]
- */
-Board.prototype.searchForTile = function (tileType) {
-    for (var i = this.numRows - 1; i >= 0; i--) {
-    	for (var j = this.numCols - 1; j >= 0; j--) {
-            var tile = this.getAt(i * this.numCols + j);
-
-            if (tile.getType() === tileType) {
-            	return tile;
             }
     	}
     }
@@ -284,7 +311,7 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     for (var i = rw; i < rows + rw; i++) {
     	for (var j = cl; j < columns + cl; j++) {
-            var tile = this.getAt(i * this.numCols + j);
+            var tile = this.getTile(j, i);
             indexes.push(tile.getType());
     	}
     }
@@ -293,7 +320,7 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     for (var s = rw; s < rows + rw; s++) {
     	for (var t = cl; t < columns + cl; t++) {
-            var newTile = this.getAt(s * this.numCols + t);
+            var newTile = this.getTile(t, s);
             var type = indexes.pop();
             newTile.setType(type);
     	}
@@ -307,20 +334,28 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
  * @return {[type]}       [description]
  */
 Board.prototype.swap = function (tileA, tileB) {
-    if (!(tileA instanceof Board.tileClass) || !(tileB instanceof Board.tileClass)) {
+    if (!(tileA instanceof this.tileClass) || !(tileB instanceof this.tileClass)) {
     	return false;
     }
 
-    var tileAColumn = this.getIndex(tileA) % this.numCols;
-    var tileARow = Math.floor(this.getIndex(tileA) / this.numCols);
-    var tileBColumn = this.getIndex(tileB) % this.numCols;
-    var tileBRow = Math.floor(this.getIndex(tileB) / this.numCols);
+    var aType = tileA.getType();
+    var bType = tileB.getType();
 
-    this.removeTile(tileAColumn, tileARow, false);
-    this.removeTile(tileBColumn, tileBRow, false);
+    tileA.setType(bType);
+    tileB.setType(aType);
 
-    this.putTile(tileA, tileBColumn, tileBRow);
-    this.putTile(tileB, tileAColumn, tileARow);
+    this.setCell(tileA, tileA.tileColumn, tileA.tileRow);
+    this.setCell(tileB, tileB.tileColumn, tileB.tileRow);
+};
+
+/**
+ * [calculateTileID description]
+ * @param  {[type]} col [description]
+ * @param  {[type]} row [description]
+ * @return {[type]}     [description]
+ */
+Board.prototype.calculateTileID = function (col, row) {
+    return row * this.numCols + col;
 };
 
 module.exports = Board;

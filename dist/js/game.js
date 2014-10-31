@@ -6,9 +6,6 @@ var MatchThreeBoard = require('./prefabs/environment/matchThreeBoard');
 
 /* Initialize state variables */
 var GameState = function(game) {
-    //this.selectedTile = null; /* a pointer to the tile that has been clicked */
-    //this.allowInput = true; /* Disable input while gems are dropping */
-    //this.minMatch = 3; /* The minimum number of tiles of the same colour that would be considered a match. */
 };
 
 
@@ -22,157 +19,16 @@ GameState.prototype.preload = function() {
 
 /* Create game objects */
 GameState.prototype.create = function() {
-    //this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.board = new MatchThreeBoard(this.game, 6, 10, 0, 0, 'tileFaces');
-    console.log(this.board);
     this.board.fill(0, 0, 6, 10);
-    //this.board.shuffle(0, 0, 6, 10);
 
-    /* Add a mouse input listener to the state.*/
-    //this.game.input.onDown.add(this.getTile, this);
+    this.scoreBoard = this.game.add.text(0, 480, this.board.score, {font: 'bold 16pt Arial'});
 };
 
 
 GameState.prototype.update = function() {
-    
+    this.scoreBoard.text = this.board.score;
 
-};
-
-/**
- * Select a tile or move the selected tile.
- * @return { null }
- */
-GameState.prototype.getTile = function () {
-	/* Convert the mouse coordinated to tilemap coordinates */
-	var x = this.layer.getTileX(this.game.input.activePointer.x);
-	var y = this.layer.getTileY(this.game.input.activePointer.y);
-
-	if (x === undefined || y === undefined) {
-		return;
-	}
-
-    /* Get the tile at the specified coordinates */
-	var tile = this.map.getTile(x, y, this.layer);
-
-    /* Make the tile the selected tile if there's no selected tile. */
-    if (!this.selectedTile) {
-    	this.selectedTile = tile;
-    } else {
-    	//debugger;
-    	var selected = this.selectedTile;
-
-        /* Determine if the tile can be moved to the clicked position. */
-    	if (this.checkTileMove(selected, tile)) {
-    		if (this.checkMatches(selected, tile) || this.checkMatches(tile, selected)) {
-    			this.swapTiles(selected, tile);
-
-		    	this.selectedTile = null;
-    		} else {
-    			return;
-    		}
-            
-    	} else {
-            return;
-    	}
-    }
-};
-
-
-/**
- * Determine if a tile can be moved to the point clicked.
- * Returns true if the tile can be moved to the destination.
- * @param {Tile} selTile the previously selected tile
- * @param {Tile} destTile the current tile that was clicked on
- * @return { null } 
- */
-GameState.prototype.checkTileMove = function (selTile, destTile) {
-	// if the destination tile is two 'blocks' or more to the right
-    if (destTile.x > selTile.x + 1 ||
-        destTile.x < selTile.x - 1 || 
-        destTile.y > selTile.y + 1 ||
-        destTile.y < selTile.y - 1 ) {
-    	return false;
-    }
-
-    return true;
-};
-
-
-/**
- * Swap two tiles.
- * @param  {Tile} selTile  The previously selected tile.
- * @param  {Tile} destTile The current tile that was clicked on.
- * @return {null}          
- */
-GameState.prototype.swapTiles = function (selTile, destTile) {
-	this.map.removeTile(selTile.x, selTile.y, this.layer);
-	this.map.putTile(destTile, selTile.x, selTile.y, this.layer);
-	this.map.removeTile(destTile.x, destTile.y, this.layer);
-	this.map.putTile(selTile, destTile.x, destTile.y, this.layer);
-
-    //var movedTile = this.map.getTile(destTile.x, destTile.y, this.layer);
-	this.clearTiles(selTile, destTile);
-};
-
-
-GameState.prototype.checkMatches = function (selTile, destTile) {
-	var countUp = this.countSameTiles(destTile, 0, -1, selTile.index);
-	var countDown = this.countSameTiles(destTile, 0, 1, selTile.index);
-	var countLeft = this.countSameTiles(destTile, -1, 0, selTile.index);
-	var countRight = this.countSameTiles(destTile, 1, 0, selTile.index);
-	
-    var countHoriz = countLeft + countRight + 1;
-    var countVertical = countUp + countDown + 1;
-
-    if (countHoriz >= this.minMatch || countVertical >= this.minMatch) {
-    	return true;
-    }
-
-    return false;
-};
-
-
-GameState.prototype.countSameTiles = function (startTile, moveX, moveY, idx) {
-    var curX = startTile.x + moveX;
-	var curY = startTile.y + moveY;
-	var count = 0;
-	var currentTile = this.map.getTile(curX, curY, this.layer);
-	while (currentTile && currentTile.index === idx) {
-		count++;
-		curX += moveX;
-		curY += moveY;
-		currentTile = this.map.getTile(curX, curY, this.layer);
-	}
-	return count;
-};
-
-
-GameState.prototype.clearTiles = function (selTile, destTile) {
-    var countUp = this.countSameTiles(destTile, 0, -1, selTile.index);
-	var countDown = this.countSameTiles(destTile, 0, 1, selTile.index);
-	var countLeft = this.countSameTiles(destTile, -1, 0, selTile.index);
-	var countRight = this.countSameTiles(destTile, 1, 0, selTile.index);
-	
-    var countHoriz = countLeft + countRight + 1;
-    var countVertical = countUp + countDown + 1;
-    var startHoriz = destTile.x - countLeft;
-    var endHoriz = destTile.x + countRight;
-    var startVertical = destTile.y - countUp;
-    var endVertical = destTile.y + countDown;
-
-    if (countHoriz >= this.minMatch) {
-    	for (var i = startHoriz; i <= endHoriz; i++) {
-    		this.map.removeTile(i, destTile.y, this.layer);
-    	}
-    }
-    if (countVertical >= this.minMatch) {
-    	for (var j = startVertical; j <= endVertical; j++) {
-    		this.map.removeTile(destTile.x, j, this.layer);
-    	}
-    }
-
-    var dropDuration = this.dropGems();
-    this.game.time.events.add(dropDuration * 100, this.refillBoard, this);
 };
 
 
@@ -221,11 +77,11 @@ GameState.prototype.boardRefilled = function () {
 };
 
 
-var game = new Phaser.Game(288, 480, Phaser.AUTO, 'game');
+var game = new Phaser.Game(288, 500, Phaser.AUTO, 'game');
 game.state.add('game', GameState, true);
 
 
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_162ab359.js","/")
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_d29f244f.js","/")
 },{"./prefabs/environment/matchThreeBoard":5,"1YiZ5S":9,"buffer":6}],2:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 'use strict';
@@ -241,6 +97,8 @@ var Board = function (game, columns, rows, top, left, parent) {
 	this.y = this.topOffset;
 	this.numRows = rows;
 	this.numCols = columns;
+
+    this.score = 0;
 };
 
 Board.prototype = Object.create(Phaser.Group.prototype);
@@ -275,17 +133,27 @@ Board.prototype.fill = function (cl, rw, width, height, type) {
 	if (!(cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows)) {
     	return false;
     }
-
+    
     var columns = !!width ? (width + cl + 1 > this.numCols ? this.numCols : width) : this.numCols; 
     var rows = !!height ? (height + rw + 1 > this.numRows ? this.numRows : height) : this.numRows; 
 
     for (var i = rw; i < rows + rw; i++) {
    	    for (var j = cl; j < columns + cl; j++) {
    	    	var tile = new this.tileClass(this.game, j * this.tileWidth, i * this.tileHeight, this.tileSheet, type || Math.floor(Math.random() * this.typeCount));
+            tile.board = this;
+            this.setCell(tile, j, i);
 
-   	    	this.addAt(tile, i * this.numCols + j, false);
+   	    	this.add(tile);
    	    }
     }
+};
+
+// Set the Tile's position within the board.
+Board.prototype.setCell = function (tile, col, row) {
+    tile.tileColumn = col;
+    tile.tileRow = row;
+    tile.tileID = this.calculateTileID(col, row);
+    tile.setPosition();
 };
 
 /**
@@ -309,7 +177,7 @@ Board.prototype.forEachTile = function (callback, callbackContext, cl, rw, width
 
     for (var i = rw; i < rows + rw; i++) {
     	for (var j = cl; j < columns + cl; j++) {
-            tiles[0] = this.getAt(i * this.numCols + j);
+            tiles[0] = this.getTile(j, i);
             callback.apply(callbackContext, tiles);
     	}
     }
@@ -324,10 +192,38 @@ Board.prototype.forEachTile = function (callback, callbackContext, cl, rw, width
  */
 Board.prototype.getTile = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	return this.getAt(rw * this.numCols + cl);
+    	return this.iterate('tileID', this.calculateTileID(cl, rw), Phaser.Group.RETURN_CHILD);
     } else {
     	return null;
     }
+};
+
+/**
+ * Get the cell coordinates of the point clicked.
+ * @param  {Number} x The x coordinate to fetch the column position.
+ * @param  {Number} y The y coordinate to fetch the row position.
+ * @return {Object | null}   The cell coordinates, if found, or null.
+ */
+Board.prototype.getCell = function (x, y) {
+    var column = Math.floor((x - this.leftOffset) / this.tileWidth);
+    var row = Math.floor((y - this.topOffset) / this.tileHeight);
+
+    if (column >= 0 && column < this.numCols && row >= 0 && row < this.numRows) {
+        return {column: column, row: row};
+    } else {
+        return null;
+    }
+};
+
+/**
+ * Get the tile at the x-y coordinates specified.
+ * @param  {Number} x The x coordinate to fetch the tile from.
+ * @param  {Number} y The y coordinate to fetch the tile from.
+ * @return {Board.tileClass}   The Tile at the given coordinates or null if not found.
+ */
+Board.prototype.getTileXY = function (x, y) {
+    var cell = this.getCell(x, y);
+    return this.getTile(cell.column, cell.row);
 };
 
 /**
@@ -338,7 +234,7 @@ Board.prototype.getTile = function (cl, rw) {
  */
 Board.prototype.getTileAbove = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw > 0 && rw < this.numRows) {
-    	return this.getAt((rw - 1) * this.numCols + cl);
+    	return this.getTile(cl, rw - 1);
     } else {
     	return null;
     }
@@ -352,7 +248,7 @@ Board.prototype.getTileAbove = function (cl, rw) {
  */
 Board.prototype.getTileBelow = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows - 1) {
-    	return this.getAt((rw + 1) * this.numCols + cl);
+    	return this.getTile(cl, rw + 1);
     } else {
     	return null;
     }
@@ -366,7 +262,7 @@ Board.prototype.getTileBelow = function (cl, rw) {
  */
 Board.prototype.getTileLeft = function (cl, rw) {
     if (cl > 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	return this.getAt(rw * this.numCols + cl - 1);
+    	return this.getTile(cl - 1, rw);
     } else {
     	return null;
     }
@@ -380,7 +276,7 @@ Board.prototype.getTileLeft = function (cl, rw) {
  */
 Board.prototype.getTileRight = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols - 1 && rw >= 0 && rw < this.numRows) {
-    	return this.getAt(rw * this.numCols + cl + 1);
+    	return this.getTile(cl + 1, rw);
     } else {
     	return null;
     }
@@ -394,7 +290,7 @@ Board.prototype.getTileRight = function (cl, rw) {
  */
 Board.prototype.hasTile = function (cl, rw) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	return !!(this.getAt(rw * this.numCols + cl));
+    	return !!(this.getTile(cl, rw));
     } else {
     	return false;
     }
@@ -419,15 +315,20 @@ Board.prototype.putTile = function (tile, cl, rw) {
     			this.removeTile(cl, rw);
     		}
 
-    		this.addAt(tile, rw * this.numCols + cl, false);
+            tile.board = this;
+            this.setCell(tile, cl, rw);
+
+            this.add(tile);
     	} else {
     		if (this.hasTile(cl, rw)) {
     			this.removeTile(cl, rw);
     		} 
 
     		var newTile = new this.tileClass(this.game, cl * this.tileWidth, rw * this.tileHeight, this.tileSheet, +tile);
+            newTile.board = this;
+            this.setCell(newTile, cl, rw);
 
-    	    this.addAt(newTile, rw * this.numCols + cl, false);
+    	    this.add(newTile);
     	}
     } else {
     	return null;
@@ -443,7 +344,7 @@ Board.prototype.putTile = function (tile, cl, rw) {
  */
 Board.prototype.removeTile = function (cl, rw, destroy) {
     if (cl >= 0 && cl < this.numCols && rw >= 0 && rw < this.numRows) {
-    	var tile = this.getAt(rw * this.numCols + cl);
+    	var tile = this.getTile(cl, rw);
     	this.remove(tile, destroy, false);
     	return tile;
     } else {
@@ -471,28 +372,10 @@ Board.prototype.replaceTiles = function (srcType, destType, cl, rw, width, heigh
 
     for (var i = rw; i < rows + rw; i++) {
     	for (var j = cl; j < columns + cl; j++) {
-            var tile = this.getAt(i * this.numCols + j);
+            var tile = this.getTile(j, i);
 
             if (tile.getType() === srcType) {
             	tile.setType(destType);
-            }
-    	}
-    }
-};
-
-/**
- * Search the entire map for the first tile matching the tileType and returns it or null.
- * The search begins at the bottom right corner of the board.
- * @param  {Number} tileType The tile's type.
- * @return {[type]}          [description]
- */
-Board.prototype.searchForTile = function (tileType) {
-    for (var i = this.numRows - 1; i >= 0; i--) {
-    	for (var j = this.numCols - 1; j >= 0; j--) {
-            var tile = this.getAt(i * this.numCols + j);
-
-            if (tile.getType() === tileType) {
-            	return tile;
             }
     	}
     }
@@ -514,7 +397,7 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     for (var i = rw; i < rows + rw; i++) {
     	for (var j = cl; j < columns + cl; j++) {
-            var tile = this.getAt(i * this.numCols + j);
+            var tile = this.getTile(j, i);
             indexes.push(tile.getType());
     	}
     }
@@ -523,7 +406,7 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
 
     for (var s = rw; s < rows + rw; s++) {
     	for (var t = cl; t < columns + cl; t++) {
-            var newTile = this.getAt(s * this.numCols + t);
+            var newTile = this.getTile(t, s);
             var type = indexes.pop();
             newTile.setType(type);
     	}
@@ -537,20 +420,28 @@ Board.prototype.shuffle = function (cl, rw, width, height) {
  * @return {[type]}       [description]
  */
 Board.prototype.swap = function (tileA, tileB) {
-    if (!(tileA instanceof Board.tileClass) || !(tileB instanceof Board.tileClass)) {
+    if (!(tileA instanceof this.tileClass) || !(tileB instanceof this.tileClass)) {
     	return false;
     }
 
-    var tileAColumn = this.getIndex(tileA) % this.numCols;
-    var tileARow = Math.floor(this.getIndex(tileA) / this.numCols);
-    var tileBColumn = this.getIndex(tileB) % this.numCols;
-    var tileBRow = Math.floor(this.getIndex(tileB) / this.numCols);
+    var aType = tileA.getType();
+    var bType = tileB.getType();
 
-    this.removeTile(tileAColumn, tileARow, false);
-    this.removeTile(tileBColumn, tileBRow, false);
+    tileA.setType(bType);
+    tileB.setType(aType);
 
-    this.putTile(tileA, tileBColumn, tileBRow);
-    this.putTile(tileB, tileAColumn, tileARow);
+    this.setCell(tileA, tileA.tileColumn, tileA.tileRow);
+    this.setCell(tileB, tileB.tileColumn, tileB.tileRow);
+};
+
+/**
+ * [calculateTileID description]
+ * @param  {[type]} col [description]
+ * @param  {[type]} row [description]
+ * @return {[type]}     [description]
+ */
+Board.prototype.calculateTileID = function (col, row) {
+    return row * this.numCols + col;
 };
 
 module.exports = Board;
@@ -562,13 +453,16 @@ module.exports = Board;
 var Tile = function (game, x, y, key, type) {
 	Phaser.Sprite.call(this, game, x, y, key);
 	this.tileType = type;
+	this.tileRow = null;
+	this.tileColumn = null;
+	this.tileID = null;
 };
 
 Tile.prototype = Object.create(Phaser.Sprite.prototype);
 Tile.prototype.constructor = Tile;
 
 Tile.prototype.update = function () {
-
+   
 };
 
 Tile.prototype.setType = function (type) {
@@ -577,6 +471,11 @@ Tile.prototype.setType = function (type) {
 
 Tile.prototype.getType = function () {
 	return this.tileType;
+};
+
+Tile.prototype.setPosition = function () {
+    this.x = this.tileColumn * this.board.tileWidth;
+    this.y = this.tileRow * this.board.tileHeight;
 };
 
 module.exports = Tile;
@@ -596,19 +495,42 @@ var MatchThreeTile = function (game, x, y, key, colour) {
 	this.animations.add(this.animNames[3], [3], 60, false);
 
 	this.animations.play(this.animNames[this.tileType]);
+
+	this.inputEnabled = true;
+	this.input.enableDrag();
+	this.input.enableSnap(MatchThreeTile.tileWidth, MatchThreeTile.tileHeight, false, true);
+
+	this.events.onDragStart.add(this.onTileDrag, this);
+	this.events.onDragStop.add(this.dropTile, this);
 };
 
-MatchThreeTile.prototype = Object.create(Phaser.Sprite.prototype);
+MatchThreeTile.prototype = Object.create(Tile.prototype);
 MatchThreeTile.prototype.constructor = MatchThreeTile;
 
 MatchThreeTile.prototype.update = function () {
+	
+};
 
+MatchThreeTile.prototype.onTileDrag = function () {
+	this.z = 100;
+	this.board.selectedTile = this;
+};
+
+MatchThreeTile.prototype.dropTile = function () {
+	var temp = this.board.getTileXY(this.x, this.y);
+	this.board.tempTile = temp;
+	this.board.validateMove();
 };
 
 MatchThreeTile.tileWidth = 48;
 MatchThreeTile.tileHeight = 48;
 MatchThreeTile.prototype.animNames = ['star', 'heart', 'cross', 'diamond'];
 MatchThreeTile.tileTypeCount = MatchThreeTile.prototype.animNames.length;
+
+MatchThreeTile.prototype.setType = function (type) {
+	this.tileType = type;
+	this.animations.play(this.animNames[this.tileType]);
+};
 
 module.exports = MatchThreeTile;
 }).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/prefabs/characters/matchThreeTile.js","/prefabs/characters")
@@ -625,6 +547,15 @@ var MatchThreeBoard = function (game, columns, rows, top, left, spritesheet, par
     this.setTileClass(MatchThreeTile);
 
 	this.typeCount = 4;
+
+    /* The selected Tile. */
+	this.selectedTile = null;
+
+	/* The Tile the selected Tile is swapped with */
+	this.tempTile = null;
+
+	this.allowInput = false;
+	this.minMatch = 3;
 };
 
 MatchThreeBoard.prototype = Object.create(Board.prototype);
@@ -632,6 +563,144 @@ MatchThreeBoard.prototype.constructor = MatchThreeBoard;
 
 MatchThreeBoard.prototype.update = function () {
 
+};
+
+/**
+ * Count how many games of the same colour are above, below, to the left and right 
+ * of the tile argument. If there are more than the minMatch matched tiles, remove
+ * them. If not, return the tiles to their starting positions.
+ * @return {[type]} [description]
+ */
+MatchThreeBoard.prototype.checkForMatches = function (tile) {
+    if (!tile) {
+        return false;
+    }
+
+	var countUp = this.countSameTiles(tile, 0, -1);
+    var countDown = this.countSameTiles(tile, 0, 1);
+    var countLeft = this.countSameTiles(tile, -1, 0);
+    var countRight = this.countSameTiles(tile, 1, 0);
+    
+    var countHoriz = countLeft + countRight + 1;
+    var countVert = countUp + countDown + 1;
+
+    if (countVert >= this.minMatch) {
+        this.score += countVert;
+        this.removeMatchedTiles(tile.tileColumn, tile.tileRow - countUp, tile.tileColumn, tile.tileRow + countDown);
+    }
+
+    if (countHoriz >= this.minMatch) {
+        this.score += countHoriz;
+        this.removeMatchedTiles(tile.tileColumn - countLeft, tile.tileRow, tile.tileColumn + countRight, tile.tileRow);
+    }
+
+    if (countVert < this.minMatch && countHoriz < this.minMatch) {
+        this.swap(this.selectedTile, this.tempTile);
+        this.resetSelectedTile();
+    }
+};
+
+MatchThreeBoard.prototype.countSameTiles = function (tile, moveX, moveY) {
+    var type = tile.getType();
+    var curColumn = tile.tileColumn + moveX;
+    var curRow = tile.tileRow + moveY;
+    var currentTile = this.getTile(curColumn, curRow);
+    var count = 0;
+
+    while (currentTile && currentTile.getType() === type) {
+        count++;
+        curColumn += moveX;
+        curRow += moveY;
+        currentTile = this.getTile(curColumn, curRow);
+    }
+
+    return count;
+};
+
+/**
+ * Check if the selectedTile can be moved to the tempTile cell.
+ * @return {undefined}         
+ */
+MatchThreeBoard.prototype.validateMove = function () {
+    if (!this.tempTile) {
+    	this.resetSelectedTile();
+    } else {
+        var vert = Math.abs(this.selectedTile.tileColumn - this.tempTile.tileColumn);
+        var horiz = Math.abs(this.selectedTile.tileRow - this.tempTile.tileRow);
+
+        if (vert === 1 && horiz === 0 || vert === 0 && horiz === 1) {
+            this.swap(this.selectedTile, this.tempTile);
+            this.checkForMatches(this.tempTile);
+
+            var dropTileDuration = this.dropTiles();
+            this.game.time.events.add(dropTileDuration * 100, this.refillBoard, this);
+
+        } else {
+            this.resetSelectedTile();
+        }
+    }
+};
+
+MatchThreeBoard.prototype.resetSelectedTile = function () {
+    this.setCell(this.selectedTile, this.selectedTile.tileColumn, this.selectedTile.tileRow);
+    this.selectedTile = null;
+    this.tempTile = null;
+};
+
+
+MatchThreeBoard.prototype.removeMatchedTiles = function (sCol, sRow, eCol, eRow) {
+    var startCol = Phaser.Math.clamp(sCol, 0, this.numCols - 1);
+    var startRow = Phaser.Math.clamp(sRow , 0, this.numRows - 1);
+    var endCol = Phaser.Math.clamp(eCol, 0, this.numCols - 1);
+    var endRow = Phaser.Math.clamp(eRow, 0, this.numRows - 1);
+    for (var i = startCol; i <= endCol; i++) {
+        for (var j = startRow; j <= endRow; j++) {
+            var tile = this.getTile(i, j);
+            tile.kill();
+            this.setCell(tile, -1, -1);
+        }
+    }
+};
+
+MatchThreeBoard.prototype.dropTiles = function () {
+    //debugger;
+    var dropRowCountMax = 0;
+    for (var i = 0; i < this.numCols; i++) {
+        var dropRowCount = 0;
+        for (var j = this.numRows - 1; j >= 0; j--) {
+            var tile = this.getTile(i, j);
+            if (tile === null) {
+                dropRowCount++;
+            } else if (dropRowCount > 0) {
+                this.setCell(tile, tile.tileColumn, tile.tileRow + dropRowCount);
+            }
+        }
+        dropRowCountMax = Math.max(dropRowCount, dropRowCountMax);
+    }
+    return dropRowCountMax;
+};
+
+MatchThreeBoard.prototype.refillBoard = function () {
+    var maxMissingTiles = 0;
+    for (var i = 0; i < this.numCols; i++) {
+        var missingTiles = 0;
+        for (var j = this.numRows - 1; j >= 0; j--) {
+            var tile = this.getTile(i, j);
+            if (tile === null) {
+                missingTiles++;
+                tile = this.getFirstDead();
+                tile.reset(i * this.tileWidth, -missingTiles * this.tileHeight);
+                tile.setType(Math.floor(Math.random() * this.typeCount));
+                this.setCell(tile, i, j);
+            }
+        }
+        maxMissingTiles = Math.max(maxMissingTiles, missingTiles);
+    }
+    this.game.time.events.add(maxMissingTiles * 2 * 100, this.boardRefilled, this);
+};
+
+MatchThreeBoard.prototype.boardRefilled = function () {
+    console.log('Working!');
 };
 
 module.exports = MatchThreeBoard;
